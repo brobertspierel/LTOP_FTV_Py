@@ -4,7 +4,16 @@
 #  # #\\
 #  ########################################################################################################
 import ee
+# ee.Authenticate() #uncomment after testing
 ee.Initialize()
+
+#just use for testing 
+geometry = ee.Geometry.Polygon(
+        [[[104.89306074775232, 16.260851065722026],
+          [104.89306074775232, 16.03924306136429],
+          [105.25011641181482, 16.03924306136429],
+          [105.25011641181482, 16.260851065722026]]])
+
 params = {
     "version": '0.0.1',
     "place": 'servir_comps_revised',
@@ -13,9 +22,10 @@ params = {
     "seedSpacing": 10,
     "randomPts": 20000,
     "imageSource": 'servir',
-    "assetsRoot": 'users/clarype',
-    "assetsChild": '', # this is updated from 01, 02, 03 to 04
-    "aoi": ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry(),
+    "assetsRoot": 'users/ak_glaciers',
+    #TODO this is going to break if you try to pass a folder that doesn't exist
+    "assetsChild": 'Cambodia_troubleshooting_tc', 
+    "aoi": geometry,#ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry(),
     "maxClusters": 5000,
     "minClusters": 5000,
     # this has to be uploaded from a local directory and changed
@@ -26,4 +36,4 @@ params = {
     "startDate":'11-20',
     "endDate": '03-10',
     "masked": ['cloud', 'shadow']
-};
+}
