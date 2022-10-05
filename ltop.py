@@ -64,7 +64,7 @@ def runSNIC(composites, aoi, patchSize):
 # now split the SNIC bands
 
 def getSNICmeanBands(snic_output):
-    return snic_output.select(["seeds", "clusters", "B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean","B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean","B5_2_mean", "B7_2_mean"])
+    return snic_output.select(snic_output.bandNames())#["seeds", "clusters", "B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean","B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean","B5_2_mean", "B7_2_mean"])
 
 def getSNICseedBands(snic_output):
     return snic_output.select(['seeds'])
@@ -151,22 +151,22 @@ def samplePts(pts, img):
 
 # train a means model
 
-def trainKmeans(snic_cluster_pts, min_clusters, max_clusters):
+def trainKmeans(snic_cluster_pts, min_clusters, max_clusters,bands):
 
 
     training = ee.Clusterer.wekaCascadeKMeans(minClusters= min_clusters, maxClusters= max_clusters).train(
         features= snic_cluster_pts,
         #realanames= ["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean","B7_2_mean"],
-        inputProperties= ["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean", "B7_2_mean"],
+        inputProperties= bands#["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean", "B7_2_mean"],
         #inputProperties=["seed_3", "seed_4", "seed_5", "seed_6", "seed_7", "seed_8", "seed_9", "seed_10", "seed_11", "seed_12", "seed_13", "seed_14", "seed_15", "seed_16", "seed_17","seed_18", "seed_19", "seed_20"]
     )
     return training;
 
 
 # run thekmeans model - note that the inputs are being created in the snic section in the workflow document
-def runKmeans(snic_cluster_pts, min_clusters, max_clusters, aoi, snic_output):
+def runKmeans(snic_cluster_pts, min_clusters, max_clusters, aoi, snic_output,bands):
     # train a kmeans model
-    trainedModel = trainKmeans(snic_cluster_pts, min_clusters, max_clusters)
+    trainedModel = trainKmeans(snic_cluster_pts, min_clusters, max_clusters,bands)
     # call the trainedkmeans model
     clusterSeed = snic_output.cluster(trainedModel) #.clip(aoi);changed 8 / 23 / 22
     return clusterSeed
@@ -634,10 +634,11 @@ def snic01(snic_composites, aoi, random_pts, patch_size):
 def kmeans02_1(snicPts, SNICimagery, aoi, min_clusters, max_clusters):
     # take the snic outputs from the previous steps and thentrain and run a kmeans model
     snic_bands = SNICimagery.bandNames()
-    snic_bands = ee.List.remove(ee.String('clusters'))
+    snic_bands = snic_bands.remove('clusters')
+    snic_bands = snic_bands.remove('seeds')
     snicKmeansImagery = ee.Image(SNICimagery).select(snic_bands)#["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean","B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean","B7_2_mean"])
 
-    kMeansImagery = runKmeans(snicPts, min_clusters, max_clusters, aoi, snicKmeansImagery);
+    kMeansImagery = runKmeans(snicPts, min_clusters, max_clusters, aoi, snicKmeansImagery,snic_bands);
 
     # kMeansPoints = selectKmeansPts(kMeansImagery, aoi);
     return kMeansImagery

@@ -14,6 +14,8 @@ geometry = ee.Geometry.Polygon(
           [105.25011641181482, 16.03924306136429],
           [105.25011641181482, 16.260851065722026]]])
 
+#note that its important you set up the place and the imageSource in advance because this will determine
+#your naming conventions going forward. 
 params = {
     "version": '0.0.1',
     "place": 'servir_comps_revised',
@@ -22,9 +24,9 @@ params = {
     "seedSpacing": 10,
     "randomPts": 20000,
     "imageSource": 'servir',
-    "assetsRoot": 'users/ak_glaciers',
+    "assetsRoot": 'projects/ee-ltop-py/assets/',
     #TODO this is going to break if you try to pass a folder that doesn't exist
-    "assetsChild": 'Cambodia_troubleshooting_tc', 
+    "assetsChild": 'LTOP_testing', 
     "aoi": geometry,#ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry(),
     "maxClusters": 5000,
     "minClusters": 5000,

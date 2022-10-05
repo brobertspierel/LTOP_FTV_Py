@@ -81,14 +81,14 @@ class RunSNIC(object):
         task = ee.batch.Export.table.toAsset(
                     collection= snic_output01.get(0),
                     description="LTOP_SNIC_pts_"+self.args.params["place"]+"_c2_"+str(self.args.params["randomPts"])+"_pts_"+str(self.args.params["startYear"]),
-                    assetId= self.args.params["assetsRoot"]+"/LTOP_SNIC_pts_"+self.args.params["place"]+"_c2_"+str(self.args.params["randomPts"])+"_pts_"+str(self.args.params["startYear"]),
+                    assetId= self.args.params["assetsRoot"]+self.args.params["assetsChild"]+"/LTOP_SNIC_pts_"+self.args.params["place"]+"_c2_"+str(self.args.params["randomPts"])+"_pts_"+str(self.args.params["startYear"]),
                     
         )
 
         task2 = ee.batch.Export.image.toAsset(
                     image= ee.Image(snic_output01.get(1)),
                     description="LTOP_SNIC_imagery_"+self.args.params["place"]+"_c2_"+str(self.args.params["randomPts"])+"_pts_"+str(self.args.params["startYear"]),
-                    assetId=self.args.params["assetsRoot"]+"/LTOP_SNIC_imagery_"+self.args.params["place"]+"_c2_"+str(self.args.params["randomPts"])+"_pts_"+str(self.args.params["startYear"]),
+                    assetId=self.args.params["assetsRoot"]+self.args.params["assetsChild"]+"/LTOP_SNIC_imagery_"+self.args.params["place"]+"_c2_"+str(self.args.params["randomPts"])+"_pts_"+str(self.args.params["startYear"]),
                     region= self.args.params["aoi"],
                     scale=30,
                     maxPixels=10000000000000
