@@ -32,10 +32,10 @@ ee.Initialize()
 # 2. cluster the snic patches with kmeans - added a filter to remove points that didn't get valid values in previous step
 def generate_tasks(*args): 
     args = args[0]
-    
+    #note that paths need to be changed to access a Google cloud project 
     kmeans_output02_1 = ltop.kmeans02_1(ee.FeatureCollection(
-        args["assetsRoot"] + args["assetsChild"] + "/LTOP_SNIC_pts_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])).filter(ee.Filter.neq('B1_mean', None)),
-        ee.Image(args["assetsRoot"] + args["assetsChild"] + "/LTOP_SNIC_imagery_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])),
+        args["assetsRoot"] + "/LTOP_SNIC_pts_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])).filter(ee.Filter.neq('B1_mean', None)),
+        ee.Image(args["assetsRoot"] + "/LTOP_SNIC_imagery_" + args["place"] + "_c2_" + str(args["randomPts"]) + "_pts_" + str(args["startYear"])),
         args["aoi"],
         args["minClusters"],
         args["maxClusters"]

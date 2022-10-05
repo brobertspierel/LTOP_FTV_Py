@@ -633,12 +633,13 @@ def snic01(snic_composites, aoi, random_pts, patch_size):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 def kmeans02_1(snicPts, SNICimagery, aoi, min_clusters, max_clusters):
     # take the snic outputs from the previous steps and thentrain and run a kmeans model
-
-    snicKmeansImagery = ee.Image(SNICimagery).select(["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean","B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean","B7_2_mean"])
+    snic_bands = SNICimagery.bandNames()
+    snic_bands = ee.List.remove(ee.String('clusters'))
+    snicKmeansImagery = ee.Image(SNICimagery).select(snic_bands)#["B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean", "B3_1_mean","B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean", "B5_2_mean","B7_2_mean"])
 
     kMeansImagery = runKmeans(snicPts, min_clusters, max_clusters, aoi, snicKmeansImagery);
 
-    kMeansPoints = selectKmeansPts(kMeansImagery, aoi);
+    # kMeansPoints = selectKmeansPts(kMeansImagery, aoi);
     return kMeansImagery
     # return ee.List([kMeansImagery, kMeansPoints]);
 
@@ -647,7 +648,7 @@ def kmeans02_2(kmeans_imagery, aoi):
 
     kMeansPoints = selectKmeansPts(kmeans_imagery, aoi)
 
-    return kMeansPoints;
+    return kMeansPoints
 
 
 #exports.kmeans02_1 = kmeans02_1
