@@ -19,7 +19,7 @@ geometry = ee.Geometry.Polygon(
 params = {
     "version": '0.0.1',
     "place": 'servir_comps_revised',
-    "startYear": 1990,
+    "startYear": 2015,
     "endYear": 2021,
     "seedSpacing": 10,
     "randomPts": 20000,
@@ -30,8 +30,8 @@ params = {
     "aoi": geometry,#ee.FeatureCollection("projects/servir-mekong/hydrafloods/CountryBasinsBuffer").geometry(),
     "maxClusters": 5000,
     "minClusters": 5000,
-    # this has to be uploaded from a local directory and changed
-    "abstract_image_pts": ee.FeatureCollection('users/ak_glaciers/servir_comps_revised_workflow/abstract_image_ids_revised_ids'),
+    # this has to be uploaded from a local directory and changed https://code.earthengine.google.com/?asset=projects/ee-ltop-py/assets/LTOP_testing/abstract_images_grid_points
+    # "abstract_image_pts": ee.FeatureCollection(),
     "selectedLTparams": ee.FeatureCollection('users/ak_glaciers/servir_comps_revised_workflow/LTOP_servir_comps_revised_kmeans_pts_config_selected_for_GEE_upload_new_weights_gee_implementation'),
     "image_source": 'comp',
     # only needed for medoid composites
