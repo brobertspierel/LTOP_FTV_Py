@@ -559,8 +559,8 @@ def runLTversions(ic, indexName, id_points):
     # here we map over each LandTrendr parameter ation, appslying eachation to the abstract image
     #TODO its not entirely clear what's going on here but a list can't be mapped over apparently so it was changed to a list comprehension
     printer = [runLTversionsHelper(x,ic,indexName,id_points) for x in runParams.runParams]
-    printer = runParams.map(runLTversionsHelper)
-    printer = runParams.runParams.map(lambda x: runLTversionsHelper(x,ic,indexName,id_points)) 
+    # printer = runParams.map(runLTversionsHelper)
+    # printer = runParams.runParams.map(lambda x: runLTversionsHelper(x,ic,indexName,id_points)) 
 
     return printer
 
@@ -757,7 +757,7 @@ def abstractSampler03_2(img_path, startYear, endYear):
     # replaces the manual creation of an imageCollection after uploading abstract images
 
     abstractImages = []
-    yearlist = list(range(startYear,endYear))
+    yearlist = list(range(startYear,endYear+1))
     for y in yearlist:
         img = ee.Image(img_path+str(y))
         abstractImages.append(img)
@@ -765,7 +765,6 @@ def abstractSampler03_2(img_path, startYear, endYear):
     # this is the primary input to the 04 script
     abstractImagesIC = ee.ImageCollection.fromImages(abstractImages)
     return abstractImagesIC
-
 
 #exports.abstractSampler03_2 = abstractSampler03_2
 
