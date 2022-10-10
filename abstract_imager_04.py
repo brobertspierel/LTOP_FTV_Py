@@ -23,7 +23,9 @@ def run_LT_abstract_imgs(*args):
     abstractImagesPts = args['assetsRoot']+args['assetsChild']+'/abstract_images_grid_points'
     #this just takes the abstract images that were uploaded after step 3.1 and assembles them into an imageCollection 
     abstract_output03_2 = ltop.abstractSampler03_2(abstractImagesPath,args['startYear'],args['endYear']) 
-    print(abstract_output03_2)
+    # Get the number of images.
+    count = abstract_output03_2.size()
+    print('Count: ', str(count.getInfo())+'\n')
     # 4. get Landsat values for the points in the abstract images. This will automatically generate csvs in a gDrive folder that starts with your place name  
     abstract_output04 = ltop.abstractImager04(abstract_output03_2, args['place'],abstractImagesPts) 
 

@@ -10,6 +10,7 @@
 import ee
 import params
 import lt_params as runParams
+import pandas as pd 
 # This library holds modules for running an optimized version of the LandTrendr algorithm.The process addresses an
 # issue of paramaterizing the LT algorithm for different types of land cover / land use.
 
@@ -508,29 +509,96 @@ def maskNoDataValues(img):
     img_mask = img.neq(-32768)
     return img.updateMask(img_mask)
 
+#OLD VERSION?
+# def getPoint2(geom, img, z):
+#     return img.reduceRegions(collection=geom, 
+#                             reducer = 'first', 
+#                             scale = z) #.getInfo()
+
+# def runLTversionsHelper2(feature,fullParams,indexName,index):
+#     return feature.set('index', indexName).set('params', fullParams[index]).set('param_num', index)
+
+# def runLTversionsHelper(param,fullParams,ic,indexName,id_points):
+#     # this statment finds the index of the parameter being used
+#     index = fullParams.index(param)
+
+#     # here we select the index image on which to run LandTrendr
+#     fullParams[index]["timeseries"] = ic.select([indexName])
+
+#     # run LandTrendr
+
+#     lt = ee.Algorithms.TemporalSegmentation.LandTrendr(fullParams[index])
+
+#     # select the segmenation data from LandTrendr
+
+#     ltlt = lt.select(['LandTrendr'])
+
+#     # slice the LandTrendr data into sub arrays
+
+#     yearArray = ltlt.arraySlice(0, 0, 1).rename(['year'])
+
+#     sourceArray = ltlt.arraySlice(0, 1, 2).rename(['orig'])
+
+#     fittedArray = ltlt.arraySlice(0, 2, 3).rename(['fitted'])
+
+#     vertexMask = ltlt.arraySlice(0, 3, 4).rename(['vert'])
+
+#     rmse = lt.select(['rmse'])
+
+#     # place each array into a image stack one array per band
+#     lt_images = yearArray.addBands(sourceArray).addBands(fittedArray).addBands(vertexMask).addBands(rmse)
+
+#     # extract a LandTrendr pixel time series at a point
+#     getpin2 = getPoint2(id_points, lt_images,20)  # add scale 30 some points(cluster_id 1800 for example) do not extract lt data.I compared the before change output with the after the chagne output and the data that was in both datasets matched.compared 1700 to 1700...
+
+#     # maps over a feature collection that holds the LandTrendr data and adds attributes: index, params and param number.
+
+#     attriIndexToData = getpin2.map(lambda x: runLTversionsHelper2(x,fullParams,indexName,index)) 
+
+#     return attriIndexToData
+
 def getPoint2(geom, img, z):
     return img.reduceRegions(collection=geom, 
                             reducer = 'first', 
                             scale = z) #.getInfo()
 
-def runLTversionsHelper2(feature,indexName,index):
-    return feature.set('index', indexName).set('params', runParams[index]).set('param_num', index)
+def runLTversionsHelper2(feature,selectedParams, indexName):
+    return feature.set('index', indexName).set('params',selectedParams).set('param_num', 0) #TODO note the zero is just a filler!!!
 
-def runLTversionsHelper(param,ic,indexName,id_points):
+def runLTversionsHelper(param,indexName,id_points):
     # this statment finds the index of the parameter being used
-    index = runParams.runParams.index(param)
+    # index = fullParams.index(param)
 
     # here we select the index image on which to run LandTrendr
-    runParams.runParams[index]["timeseries"] = ic.select([indexName])
+    # fullParams[index]["timeseries"] = ic.select([indexName])
+    #cast a row of the pandas df to dict so the LT call knows what to do with it 
 
+    #try reconstructing the dict as a tuple?
+    # lt_input = (timeseries=param['timeseries'],
+    #             maxSegments=param['maxSegments'],
+    #             spikeThreshold=param['spikeThreshold'],
+    #             vertexCountOvershoot = param['vertexCountOvershoot'],
+    #             preventOneYearRecovery = param['preventOneYearRecovery'],
+    #             recoveryThreshold = param['recoveryThreshold'],
+    #             pvalThreshold = param['pvalThrec'],
+    #             bestModelProportion = param['bestModelProporation'],
+    #             minObservationsNeeded = param['minObservationsNeeded']
+    #             )
     # run LandTrendr
-
-    lt = ee.Algorithms.TemporalSegmentation.LandTrendr(runParams.runParams[index])
+    lt = ee.Algorithms.TemporalSegmentation.LandTrendr(timeSeries=param['timeseries'],
+                                                       maxSegments=param['maxSegments'],
+                                                       spikeThreshold=param['spikeThreshold'],
+                                                       vertexCountOvershoot = param['vertexCountOvershoot'],
+                                                       preventOneYearRecovery = param['preventOneYearRecovery'],
+                                                       recoveryThreshold = param['recoveryThreshold'],
+                                                       pvalThreshold = param['pvalThreshold'],
+                                                       bestModelProportion = param['bestModelProportion'],
+                                                       minObservationsNeeded = param['minObservationsNeeded']
+                                                        )#param)#(fullParams[index])
 
     # select the segmenation data from LandTrendr
 
     ltlt = lt.select(['LandTrendr'])
-
     # slice the LandTrendr data into sub arrays
 
     yearArray = ltlt.arraySlice(0, 0, 1).rename(['year'])
@@ -551,21 +619,36 @@ def runLTversionsHelper(param,ic,indexName,id_points):
 
     # maps over a feature collection that holds the LandTrendr data and adds attributes: index, params and param number.
 
-    attriIndexToData = getpin2.map(lambda x: runLTversionsHelper2(x,indexName,index)) 
+    attriIndexToData = getpin2.map(lambda x: runLTversionsHelper2(x,param,indexName)) 
 
     return attriIndexToData
 
 def runLTversions(ic, indexName, id_points):
     # here we map over each LandTrendr parameter ation, appslying eachation to the abstract image
     #TODO its not entirely clear what's going on here but a list can't be mapped over apparently so it was changed to a list comprehension
-    printer = [runLTversionsHelper(x,ic,indexName,id_points) for x in runParams.runParams]
+    #first try converting the list to a fc
+    # LTParams = ee.List(runParams.runParams).map(lambda x: ee.Feature(None,x))
+    # LTParams = ee.FeatureCollection(LTParams)
+    
+    df = pd.DataFrame.from_records(runParams.runParams)#,index=range(len(runParams.runParams)))
+
+    #I think this was inserting an ic in each line of code but in this format we should be able 
+    # to just fill the whole thing in one go because its going to run a bunch of differnt
+    # LT configs with a different fitting index and then go onto the next fitting index 
+        # fullParams[index]["timeseries"] = ic.select([indexName])
+    df['timeseries'] = None
+    df["timeseries"] = ee.ImageCollection(ic.select([indexName]))
+    dictParams = df.to_dict(orient='records')
+    printer = [runLTversionsHelper(x,indexName,id_points) for x in dictParams]
+    # printer = [runLTversionsHelper(x,ic,indexName,id_points) for x in runParams.runParams]
     # printer = runParams.map(runLTversionsHelper)
-    # printer = runParams.runParams.map(lambda x: runLTversionsHelper(x,ic,indexName,id_points)) 
+    # printer = df.apply(runLTversionsHelper,args=(ic,indexName,id_points))
+    # printer = LTParams.map(lambda x: runLTversionsHelper(x,LTParams,ic,indexName,id_points)) 
 
     return printer
 
 def mergeLToutputs(lt_outputs):
-    # empty iable to a merged feature collection featCol
+    # empty table? to a merged feature collection featCol
 
     # loop over each feature collection and merges them into one
     for i in lt_outputs:
@@ -783,26 +866,26 @@ def abstractImager04(abstractImagesIC, place, id_points):
 
     # Rename the bands(can 't upload with names as far as I can tell)
     # abstractImagesIC = abstractImagesIC.select(['b1', 'b2', 'b3', 'b4', 'b5'], indices) # changed to uppercase
-
+ 
     for i in range(len(indices)):
-        print(indices[i])
+        # print(indices[i])
         # this calls the printer function that runs different versions of landTrendr
         multipleLToutputs = runLTversions(abstractImagesIC, indices[i], id_points)
-
+        
+        #DEPRECATED??
         # this merges the multiple LT runs
-        combinedLToutputs = mergeLToutputs(multipleLToutputs)
+        # combinedLToutputs = mergeLToutputs(multipleLToutputs)
 
         # then export the outputs - the paramater selection can maybe be done in GEE at some point but its
         # a big python script that needs to be translated into GEE
         task = ee.batch.Export.table.toDrive(
-            collection= combinedLToutputs,
+            collection= ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
             description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2",
             folder= "LTOP_" + place + "_abstractImageSamples_c2",
             fileFormat= 'CSV'
         )
+        task.start()
     return None
-
-#exports.abstractImager04 = abstractImager04
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 05 Optimized Imager # # # # # # # # # # # # # # # # # # # # # # # #
