@@ -11,6 +11,8 @@ import ee
 import params
 import lt_params as runParams
 import pandas as pd 
+import LandTrendr as ltgee
+# from LandTrendr import getLTvertStack, buildLTcollection
 # This library holds modules for running an optimized version of the LandTrendr algorithm.The process addresses an
 # issue of paramaterizing the LT algorithm for different types of land cover / land use.
 
@@ -128,20 +130,22 @@ def splitPixImg(means_img, grid, pts_per_tile):
 
 #exports.splitPixImg = splitPixImg
 
-
-
-def samplePts(pts, img):
-    imgg = img
-    def samplePts_helper(pt):
-        value = imgg.reduceRegion(
-            reducer=ee.Reducer.first(),
-            geometry=pt.geometry(),
-            scale=30
-        )
+def samplePts_helper(pt,img,abstract):
+    value = img.reduceRegion(
+        reducer=ee.Reducer.first(),
+        geometry=pt.geometry(),
+        scale=30
+    )
+    if not abstract: 
         return ee.Feature(pt.geometry(), value)
+    else: 
+        return ee.Feature(pt.geometry(), value).set('cluster_id',pt.get('cluster'))
 
-    output = pts.map(samplePts_helper)
-
+def samplePts(pts, img, abstract=False):
+    """
+    Zonal statistics for points 
+    """
+    output = pts.map(lambda x: samplePts_helper(x,img,abstract))
     return ee.FeatureCollection(output)
 
 
@@ -278,7 +282,6 @@ The demonstration consists of the following steps:
   
   
 # Generate a grid of points. Resolution and row length can be specified. 
-def cluster_id_helper(id)
 
 def generate_point_grid (cluster_ids, resolution): 
   
@@ -288,7 +291,9 @@ def generate_point_grid (cluster_ids, resolution):
 
     # Create a grid with some number of points and with rows of some length
     grid = []
-    for i in list(cluster_ids).getInfo():
+    #TODO not sure this is the best way of doing this but we can't just iterate over the 
+    #size of the fc because we need the specific cluster ids
+    for i in cluster_ids.getInfo():
         # Construct the point geometry
         pt_geo = ee.Geometry.Point([x, y], PRJ)
 
@@ -300,7 +305,6 @@ def generate_point_grid (cluster_ids, resolution):
 
         # Append to the grid
         grid.append(pt) #this was previously concat, that should be a js convention which we can change to append? 
-
 
     # Cast the grid as a feature collection
     output = ee.FeatureCollection(grid).sort('cluster_id')
@@ -357,8 +361,8 @@ def generate_synethetic_collection (point_grid, samples, start_year, end_year, r
     point_grid = ee.FeatureCollection(point_grid)
     samples = ee.FeatureCollection(samples)
 
-    # Join the two collections togeheter using the GRID_ID property
-    join_filter = ee.Filter.equals(leftField = 'cluster', rightField = 'cluster_id')
+    # Join the two collections togeheter using the cluster_id property
+    join_filter = ee.Filter.equals(leftField = 'cluster_id', rightField = 'cluster_id')
     join_opperator = ee.Join.inner('primary', 'secondary')
     joined = join_opperator.apply(point_grid, samples, join_filter)
 
@@ -394,8 +398,8 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
   # return ee.Image(img).unmask(-9999, false)
   # })
 
-  # Get the random point locations from which spectral values will be extracted - change to the kmeans stratified random points 
-#   sample_list = samplePts(kmeans_pts,sr_collection.toBands()).toList(num_points)
+  #changed to the kmeans stratified random points 
+  sample_list = samplePts(kmeans_pts,sr_collection.toBands(),abstract=True).toList(num_points)
 
   # Add a sequential ID to the samples
 #   seed_object = ee.List([ee.Feature(None, {"GRID_ID": -1})])
@@ -403,10 +407,10 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
 #   ee.List(sample_list.iterate(add_sequential_id, seed_object)).slice(1)
 #   )
 
-  # Generate the grid of points - TODO this might throw an error depending on how python interprets the agg arr output
+  # Generate the grid of points 
   point_grid = generate_point_grid(kmeans_pts.aggregate_array('cluster'), grid_res)
 
-  samples = ee.FeatureCollection(kmeans_pts.aggregate_array('cluster')) #note that this is hard coded 
+  samples = ee.FeatureCollection(sample_list) #note that this is hard coded 
 
   # Generate the synthetic image
   outputs = generate_synethetic_collection(point_grid, samples, start_year, end_year, grid_res)
@@ -421,7 +425,7 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
       start_date = ee.Date.fromYMD(cur_year, 1, 1)
       end_date = ee.Date.fromYMD(cur_year, 12, 31)
       synthetic_image = ee.Image(synthetic_collection.filterDate(start_date, end_date).first())
-  # Export the image
+#   Export the image
       task1 = ee.batch.Export.image.toAsset(
         image = synthetic_image, 
         description = "Asset-Synth-py-" + str(cur_year), 
@@ -435,9 +439,9 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
   
   # Export the original point locations
   task2 = ee.batch.Export.table.toAsset(
-    collection = grid_points ,
+    collection = point_grid,
     description = "Asset-GridPoints-py", 
-    assetId = assets_folder + "/abstract_images_grid_points"
+    assetId = assets_folder + "/abstract_images_point_grid"
   )
   task2.start()
   return None
@@ -660,43 +664,31 @@ def mergeLToutputs(lt_outputs):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 05 Optimized Imager # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
-def printer_helper_two(img):
-    out = img.updateMask(cluster_mask).set('system:time_start', img.get('system:time_start'))
-    return out
+def printer_helper_two(img,cluster_mask):
+    '''
+    Masks img (one of every image in ic) using clusters drawn from kmeans output image.
+    '''
+    return img.updateMask(cluster_mask).set('system:time_start', img.get('system:time_start'))
+    
 
-def printer_helper(feat):
+def printer_helper(feat,ic,cluster_image,aoi):
     # changes feature object to dictionary
     dic = ee.Feature(feat).toDictionary()
 
     # calls number value from dictionary feature key, maxSegments.
-
     maxSeg = dic.getNumber('maxSegments')
 
     # calls number value from dictionary feature key, spikeThreshold.
-
     spikeThr = dic.getNumber('spikeThreshold')
 
     # calls number value from dictionary feature  key, "recoveryThreshold".
+    recov = dic.getNumber("recoveryThreshold")
 
-    recov = dic.getNumber('"recoveryThreshold"')
+    # calls number value from dictionary feature key, "pvalThreshold"
+    pval = dic.getNumber("pvalThreshold")
 
-    # calls number value from dictionary feature key, "pvalThreshold"d.
-
-    pval = dic.getNumber('"pvalThreshold"d')
-
-    # LandTrendr parameter dictionary template.
-
-    runParamstemp = {
-        "timeseries": ee.ImageCollection([]),
-        "maxSegments": maxSeg,
-        "spikeThreshold": spikeThr,
-        "vertexCountOvershoot": 3,
-        "preventOneYearRecovery": True,
-        "recoveryThreshold": recov,
-        "pvalThreshold": pval,
-        "bestModelProportion": 0.75,
-        "minObservationsNeeded": maxSeg
-    }
+    #define the timeSeries param so it can be filled below - TODO not totally clear if this is necessary
+    timeSeries = ee.ImageCollection([])
 
     # get cluster ID from dictionary feature as a number
 
@@ -705,17 +697,26 @@ def printer_helper(feat):
     # creates a mask keep pixels for only a single cluster - changed for something more simple cluster_mask = cluster_image.eq(cluster_id).selfMask()
 
     # blank maskcol
-
+    cluster_mask = cluster_image.eq(cluster_id).selfMask()
     # maps over image collection applying the mask to each image
-    maskcol = ic.map(printer_helper_two)
+    maskcol = ic.map(lambda x: printer_helper_two(x,cluster_mask))
 
 
     # apply masked image collection to LandTrendr parameter dictionary
-    runParamstemp["timeseries"] = maskcol
-
+    # runParamstemp["timeseries"] = maskcol
+    timeSeries = maskcol
     # Runs LandTrendr
 
-    lt = ee.Algorithms.TemporalSegmentation.LandTrendr(runParamstemp).clip(aoi)  # .select(0) #.unmask()
+    lt = ee.Algorithms.TemporalSegmentation.LandTrendr(timeSeries = timeSeries,
+                                                        maxSegments = maxSeg,
+                                                        spikeThreshold = spikeThr,
+                                                        vertexCountOvershoot = 3,
+                                                        preventOneYearRecovery = True,
+                                                        recoveryThreshold = recov,
+                                                        pvalThreshold = pval,
+                                                        bestModelProportion = 0.75,
+                                                        minObservationsNeeded = maxSeg
+                                                        ).clip(aoi)  # .select(0) #.unmask()
 
     # return LandTrendr image collection run to list.
     return lt
@@ -724,16 +725,12 @@ def printer_helper(feat):
 # input args are the index tables above and the associated imageCollection
 def printerFunc(fc, ic, cluster_image, aoi):
 
-    output = fc.map(printer_helper)
+    output = fc.map(lambda x: printer_helper(x,ic,cluster_image,aoi))
     # this might be a little redundant but its a way to deal with the map statements
     return output
 
-#exports.printerFunc = printerFunc
-
-
 def filterTable(pt_list, index):
     return pt_list.filter(ee.Filter.eq('index', index))
-
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # Invoking functions # # # # # # # # # # # # # # # # # # # # # # # # /
@@ -875,7 +872,8 @@ def abstractImager04(abstractImagesIC, place, id_points):
         # a big python script that needs to be translated into GEE
         task = ee.batch.Export.table.toDrive(
             collection= combinedLToutputs,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
-            description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2",
+            selectors = ['cluster_id','fitted','index','orig','param_num','params','rmse','vert','year','.geo'],
+            description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected",
             folder= "LTOP_" + place + "_abstractImageSamples_c2",
             fileFormat= 'CSV'
         )
@@ -889,7 +887,7 @@ def abstractImager04(abstractImagesIC, place, id_points):
 def optimizedImager05(table, annualSRcollection, kmeans_output, aoi):
     lookUpList = table.toList(table.size())
 
-    # transformed Landsat surface reflectance image collection - this likewise would need to be changed for more indices
+    # transformed Landsat surface reflectance image collection 
     annualLTcollectionNBR = ltgee.buildLTcollection(annualSRcollection, 'NBR', ["NBR"]).select(["NBR", "ftv_nbr"],["NBR", "ftv_ltop"])
     annualLTcollectionNDVI = ltgee.buildLTcollection(annualSRcollection, 'NDVI', ["NDVI"]).select(["NDVI", "ftv_ndvi"],["NDVI", "ftv_ltop"])
     annualLTcollectionTCW = ltgee.buildLTcollection(annualSRcollection, 'TCW', ["TCW"]).select(["TCW", "ftv_tcw"],["TCW", "ftv_ltop"])

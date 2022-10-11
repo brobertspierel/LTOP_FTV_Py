@@ -32,7 +32,7 @@ params = {
     "minClusters": 5000,
     # this has to be uploaded from a local directory and changed https://code.earthengine.google.com/?asset=projects/ee-ltop-py/assets/LTOP_testing/abstract_images_grid_points
     # "abstract_image_pts": ee.FeatureCollection(),
-    "selectedLTparams": ee.FeatureCollection('users/ak_glaciers/servir_comps_revised_workflow/LTOP_servir_comps_revised_kmeans_pts_config_selected_for_GEE_upload_new_weights_gee_implementation'),
+    "selectedLTparams": ee.FeatureCollection('projects/ee-ltop-py/assets/LTOP_testing/LTOP_Cambodia_troubleshooting_selected_LT_params_tc'),
     "image_source": 'comp',
     # only needed for medoid composites
     "startDate":'11-20',

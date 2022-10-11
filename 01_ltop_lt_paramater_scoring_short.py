@@ -364,8 +364,8 @@ def addValuesToNewColumns(index, row, df):
 ***************************************
 """
 
-def main(csv_dir,njobs,output_file,startYear=1990,endYear=2021):
-	
+def run_param_scoring(csv_dir,njobs,output_file,startYear=1990,endYear=2021,aicWeight=0.296,vScoreWeight=0.886):
+
 	df_lis = read_in_CSVs(csv_dir,njobs)
 	
 	# corrects breakpoint and year arrays by fill missing elements with a correct value. 
@@ -541,19 +541,19 @@ def main(csv_dir,njobs,output_file,startYear=1990,endYear=2021):
 #######################################################################################################################################################
 #######################################################################################################################################################
 #######################################################################################################################################################
-if __name__ == '__main__':
+# if __name__ == '__main__':
 	
 
-	### new user args ###
-	input_dir = "/vol/v1/proj/LTOP_mekong/csvs/02_param_selection/guatemala/"
-	startYear = 1990 
-	endYear = 2021
-	outfile = "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/selected_lt_params/selected_tc_lt_params.csv"
-	njobs = 8
+# 	### new user args ###
+# 	input_dir = "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/output_04_lt_runs/"
+# 	startYear = 1990 
+# 	endYear = 2021
+# 	outfile = "/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/selected_lt_params/selected_tc_lt_params.csv"
+# 	njobs = 8
 
-	main(input_dir,njobs,outfile)
-	print('complete')
-	sys.exit()
+# 	main(input_dir,njobs,outfile)
+# 	print('complete')
+# 	sys.exit()
 
 #######################################################################################################################################################
 #######################################################################################################################################################
