@@ -262,23 +262,25 @@ The demonstration consists of the following steps:
 
 
 # Add a sequential ID to a set of points
-def add_sequential_id (cur, prev): 
+# def add_sequential_id (cur, prev): 
   
-    # Cast the inputs
-    cur = ee.Feature(cur)
-    prev = ee.List(prev)
+#     # Cast the inputs
+#     cur = ee.Feature(cur)
+#     prev = ee.List(prev)
 
-    # Get the ID value from the previous feature
-    prev_id = ee.Feature(prev.get(-1)).getNumber("GRID_ID")
+#     # Get the ID value from the previous feature
+#     prev_id = ee.Feature(prev.get(-1)).getNumber("GRID_ID")
 
-    # Assign the new grid ID
-    cur = cur.set("GRID_ID", prev_id.add(1).toInt64())
+#     # Assign the new grid ID
+#     cur = cur.set("cluster_id", prev_id.add(1).toInt64())
 
-    return prev.add(cur)
+#     return prev.add(cur)
   
   
 # Generate a grid of points. Resolution and row length can be specified. 
-def generate_point_grid (num_points, resolution): 
+def cluster_id_helper(id)
+
+def generate_point_grid (cluster_ids, resolution): 
   
     # Starting coordinates
     x = resolution / 2
@@ -286,12 +288,12 @@ def generate_point_grid (num_points, resolution):
 
     # Create a grid with some number of points and with rows of some length
     grid = []
-    for i in range(num_points):
+    for i in list(cluster_ids).getInfo():
         # Construct the point geometry
         pt_geo = ee.Geometry.Point([x, y], PRJ)
 
         # Construct the output feature the join property ID
-        pt = ee.Feature(pt_geo, {"GRID_ID": i})
+        pt = ee.Feature(pt_geo, {"cluster_id": i})
 
         # Increment the row position by the desired resolution
         x = x + resolution
@@ -301,7 +303,7 @@ def generate_point_grid (num_points, resolution):
 
 
     # Cast the grid as a feature collection
-    output = ee.FeatureCollection(grid).sort('GRID_ID')
+    output = ee.FeatureCollection(grid).sort('cluster_id')
 
     return output 
 
@@ -356,7 +358,7 @@ def generate_synethetic_collection (point_grid, samples, start_year, end_year, r
     samples = ee.FeatureCollection(samples)
 
     # Join the two collections togeheter using the GRID_ID property
-    join_filter = ee.Filter.equals(leftField = 'GRID_ID', rightField = 'GRID_ID')
+    join_filter = ee.Filter.equals(leftField = 'cluster', rightField = 'cluster_id')
     join_opperator = ee.Join.inner('primary', 'secondary')
     joined = join_opperator.apply(point_grid, samples, join_filter)
 
@@ -393,16 +395,18 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
   # })
 
   # Get the random point locations from which spectral values will be extracted - change to the kmeans stratified random points 
-  sample_list = samplePts(kmeans_pts,sr_collection.toBands()).toList(num_points)
+#   sample_list = samplePts(kmeans_pts,sr_collection.toBands()).toList(num_points)
 
   # Add a sequential ID to the samples
-  seed_object = ee.List([ee.Feature(None, {"GRID_ID": -1})])
-  samples = ee.FeatureCollection(
-  ee.List(sample_list.iterate(add_sequential_id, seed_object)).slice(1)
-  )
+#   seed_object = ee.List([ee.Feature(None, {"GRID_ID": -1})])
+#   samples = ee.FeatureCollection(
+#   ee.List(sample_list.iterate(add_sequential_id, seed_object)).slice(1)
+#   )
 
-  # Generate the grid of points 
-  point_grid = generate_point_grid(num_points, grid_res)
+  # Generate the grid of points - TODO this might throw an error depending on how python interprets the agg arr output
+  point_grid = generate_point_grid(kmeans_pts.aggregate_array('cluster'), grid_res)
+
+  samples = ee.FeatureCollection(kmeans_pts.aggregate_array('cluster')) #note that this is hard coded 
 
   # Generate the synthetic image
   outputs = generate_synethetic_collection(point_grid, samples, start_year, end_year, grid_res)
@@ -421,7 +425,7 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
       task1 = ee.batch.Export.image.toAsset(
         image = synthetic_image, 
         description = "Asset-Synth-py-" + str(cur_year), 
-        assetId = assets_folder + "/synthetic_image_" + str(cur_year), 
+        assetId = assets_folder + "/synthetic_image_revised_" + str(cur_year), 
         region = export_geometry,
         scale = grid_res, 
         crs = PRJ, 
@@ -563,7 +567,7 @@ def getPoint2(geom, img, z):
                             scale = z) #.getInfo()
 
 def runLTversionsHelper2(feature,selectedParams, indexName):
-    return feature.set('index', indexName).set('params',selectedParams).set('param_num', 0) #TODO note the zero is just a filler!!!
+    return feature.set('index', indexName).set('params',selectedParams).set('param_num', selectedParams['param_num']) #TODO note the zero is just a filler!!!
 
 def runLTversionsHelper(param,indexName,id_points):
     # this statment finds the index of the parameter being used
@@ -573,17 +577,6 @@ def runLTversionsHelper(param,indexName,id_points):
     # fullParams[index]["timeseries"] = ic.select([indexName])
     #cast a row of the pandas df to dict so the LT call knows what to do with it 
 
-    #try reconstructing the dict as a tuple?
-    # lt_input = (timeseries=param['timeseries'],
-    #             maxSegments=param['maxSegments'],
-    #             spikeThreshold=param['spikeThreshold'],
-    #             vertexCountOvershoot = param['vertexCountOvershoot'],
-    #             preventOneYearRecovery = param['preventOneYearRecovery'],
-    #             recoveryThreshold = param['recoveryThreshold'],
-    #             pvalThreshold = param['pvalThrec'],
-    #             bestModelProportion = param['bestModelProporation'],
-    #             minObservationsNeeded = param['minObservationsNeeded']
-    #             )
     # run LandTrendr
     lt = ee.Algorithms.TemporalSegmentation.LandTrendr(timeSeries=param['timeseries'],
                                                        maxSegments=param['maxSegments'],
@@ -638,6 +631,8 @@ def runLTversions(ic, indexName, id_points):
         # fullParams[index]["timeseries"] = ic.select([indexName])
     df['timeseries'] = None
     df["timeseries"] = ee.ImageCollection(ic.select([indexName]))
+    #this was previously an index, not sure if its actually needed but just replicate it as it was
+    df['param_num'] = range(df.shape[0])
     dictParams = df.to_dict(orient='records')
     printer = [runLTversionsHelper(x,indexName,id_points) for x in dictParams]
     # printer = [runLTversionsHelper(x,ic,indexName,id_points) for x in runParams.runParams]
@@ -651,7 +646,7 @@ def mergeLToutputs(lt_outputs):
     # empty table? to a merged feature collection featCol
 
     # loop over each feature collection and merges them into one
-    for i in lt_outputs:
+    for i in range(len(lt_outputs)):
         if i == 0:
             featCol = lt_outputs[0]
         elif i > 0 :
@@ -874,12 +869,12 @@ def abstractImager04(abstractImagesIC, place, id_points):
         
         #DEPRECATED??
         # this merges the multiple LT runs
-        # combinedLToutputs = mergeLToutputs(multipleLToutputs)
+        combinedLToutputs = mergeLToutputs(multipleLToutputs)
 
         # then export the outputs - the paramater selection can maybe be done in GEE at some point but its
         # a big python script that needs to be translated into GEE
         task = ee.batch.Export.table.toDrive(
-            collection= ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
+            collection= combinedLToutputs,#ee.FeatureCollection(multipleLToutputs).flatten(),#combinedLToutputs,
             description= "LTOP_" + place + "_abstractImageSample_lt_144params_" + indices[i] + "_c2",
             folder= "LTOP_" + place + "_abstractImageSamples_c2",
             fileFormat= 'CSV'

@@ -38,7 +38,7 @@ def create_abstract_imgs(*args):
   # annualSRcollection; 
 
   #these composites are used for the last two steps and span the full period
-  if params.params["image_source"] == 'medoid': 
+  if args["image_source"] == 'medoid': 
       pass
       # annualSRcollection = ltgee.buildSRcollection(startYear, endYear, startDate, endDate, aoi, masked); 
 
