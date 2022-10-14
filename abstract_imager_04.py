@@ -19,7 +19,7 @@ ee.Initialize()
 
 def run_LT_abstract_imgs(*args): 
     args = args[0]
-    abstractImagesPath = args['assetsRoot']+args['assetsChild']+'/synthetic_image_revised_'
+    abstractImagesPath = args['assetsRoot']+args['assetsChild']+'/synthetic_image_'
     abstractImagesPts = args['assetsRoot']+args['assetsChild']+'/abstract_images_point_grid'
     #this just takes the abstract images that were uploaded after step 3.1 and assembles them into an imageCollection 
     abstract_output03_2 = ltop.abstractSampler03_2(abstractImagesPath,args['startYear'],args['endYear']) 

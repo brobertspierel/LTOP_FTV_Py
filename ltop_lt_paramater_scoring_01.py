@@ -41,9 +41,6 @@ def arr_to_col(df,startYear,endYear):
 """
 def dfprep(df,startYear,endYear):
 
-	# drops uneeded columns 
-	df.drop(columns=['system:index'])
-
 	# add LT parameter config column
 	df['paramNum'] = 0
 
@@ -532,7 +529,7 @@ def run_param_scoring(csv_dir,njobs,startYear=1990,endYear=2021,aicWeight=0.296,
 	return df
 
 #this was previously from the 02 script and is now integrated here for ease. 
-#TODO this is still a ridiculously inefficient way of doing this. All of these iterrows calls really need to be removed
+#TODO this is still a very inefficient way of doing this. All of these iterrows calls really need to be removed
 
 ###########################################################################################################################
 
@@ -549,10 +546,9 @@ def ClusterPointCalc2(dframe, clusterPoint_id):
 
     return firstOfthese        
 
-def generate_selected_params(csv_dir,njobs,output_file): 
-
-	df = run_param_scoring(csv_dir,njobs)
-
+def generate_selected_params(*args):#csv_dir,njobs,output_file): 
+	args = args[0]
+	df = run_param_scoring(args['param_scoring_inputs'],args['njobs'],startYear = args['startYear'],endYear = args['endYear'])
 	dfList = []
 	count = 0 
 	#this was changed 3/8/2022 so that it iterates through the kmeans cluster ids and not a chronological list BRP
@@ -574,9 +570,9 @@ def generate_selected_params(csv_dir,njobs,output_file):
 	result = newDFpart.append(dfList)
 
 
-	result.to_csv(output_file, index=False)
+	result.to_csv(args['outfile'], index=False)
 	print('Done generating selected LT params file')
-	return None 
+	return 
 
 
 #######################################################################################################################################################

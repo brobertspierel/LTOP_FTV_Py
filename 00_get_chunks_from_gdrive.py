@@ -7,6 +7,21 @@ Created on Sun Apr 02 09:15:58 2017
 https://googledrive.github.io/PyDrive/docs/build/html/index.html
 https://pypi.python.org/pypi/PyDrive
 """
+# def connect_google_drive_api():
+        
+#     # use Gdrive API to access Google Drive
+#     from pydrive2.auth import GoogleAuth
+#     from pydrive2.drive import GoogleDrive
+    
+#     gauth = GoogleAuth()
+#     gauth.LocalWebserverAuth() # client_secrets.json need to be in the same directory as the script    
+    
+#     drive = GoogleDrive(gauth)
+    
+#     return drive
+
+# connect_google_drive_api()
+
 
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -64,9 +79,9 @@ for i, thisFile in enumerate(fileList):
   download_files(thisFile, outDirPath)
 
 
-# loop through downloading the files in parallel
-#pool = multiprocessing.Pool(processes=3) 
-#func = partial(download_files, outDirPath=outDirPath)
-#pool.map(func, fileList)  
-#pool.close()  
+# # loop through downloading the files in parallel
+# #pool = multiprocessing.Pool(processes=3) 
+# #func = partial(download_files, outDirPath=outDirPath)
+# #pool.map(func, fileList)  
+# #pool.close()  
   

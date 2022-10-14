@@ -485,11 +485,10 @@ def getLTvertStack(lt, runParams):
   lt = lt.select('LandTrendr')
   emptyArray = []                              # make empty array to hold another array whose length will vary depending on maxSegments parameter    
   vertLabels = []                              # make empty array to hold band names whose length will vary depending on maxSegments parameter 
-  #TODO this will almost certainly error depending on what the runParams format is 
-  for i in range(1,runParams['maxSegments']):  # loop through the maximum number of vertices in segmentation and fill empty arrays                        # define vertex number as string 
+  print('max segments is: ',runParams['maxSegments']+1) #TODO not sure if this is being done correctly
+  for i in range(0,runParams['maxSegments']+1):  # loop through the maximum number of vertices in segmentation and fill empty arrays                        # define vertex number as string 
     vertLabels.append("vert_"+str(i))               # make a band name for given vertex
     emptyArray.append(0)                             # fill in emptyArray
-
   zeros = ee.Image(ee.Array([emptyArray,        # make an image to fill holes in result 'LandTrendr' array where vertices found is not equal to maxSegments parameter plus 1
                             emptyArray,
                             emptyArray]))

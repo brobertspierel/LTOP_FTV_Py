@@ -109,23 +109,23 @@ def subsetFC(fc, grid_pts_max):
 
 # #exports.subsetFC = subsetFC
 
-def splitPixIm_helper(feat):
-    tile_bounds = feat.geometry().buffer(-250)  # could be changed
+# def splitPixIm_helper(feat):
+#     tile_bounds = feat.geometry().buffer(-250)  # could be changed
 
-    img_tile = means_img.clip(tile_bounds)  # remove this if it errors
+#     img_tile = means_img.clip(tile_bounds)  # remove this if it errors
 
-    pts = pixelsToPts(means_img, tile_bounds)
-    # try subsetting the points here before putting them back together to reduce the size of the dataset
-    pts = subsetFC(pts, pts_per_tile)
-    return pts
+#     pts = pixelsToPts(means_img, tile_bounds)
+#     # try subsetting the points here before putting them back together to reduce the size of the dataset
+#     pts = subsetFC(pts, pts_per_tile)
+#     return pts
 
-# there is an issue where GEE complains if we straight convert pixels to points because there are too many.Try tiling the image and converting those first.
-def splitPixImg(means_img, grid, pts_per_tile):
+# # there is an issue where GEE complains if we straight convert pixels to points because there are too many.Try tiling the image and converting those first.
+# def splitPixImg(means_img, grid, pts_per_tile):
 
-    # we map over the grid tiles, subsetting the image
-    tile_pts = grid.map(splitPixIm_helper)
+#     # we map over the grid tiles, subsetting the image
+#     tile_pts = grid.map(splitPixIm_helper)
 
-    return tile_pts.flatten()
+#     return tile_pts.flatten()
 
 
 #exports.splitPixImg = splitPixImg
@@ -378,8 +378,10 @@ def generate_synethetic_collection (point_grid, samples, start_year, end_year, r
       ee.List.sequence(0, (end_year - start_year)).map(lambda x: loop_over_year(x,start_year,resolution,buffers)) #TODO convert this - the loop_over_year func needs (index,start_year,resolution,buffers): 
       )
     return synthetic_images, grid_with_spectral, samples
-  
-#this needs to be renamed 
+
+def mask_func(img): 
+  return ee.Image(img).unmask(-9999, False)
+
 def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,start_year,end_year):
 
   #make sure the stratified points from kmeans are cast to a featureCollection 
@@ -393,19 +395,11 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
   # TODO Generate a time-series from servir composites - this could also be passed as an arg? 
 #   sr_collection = ltop.buildSERVIRcompsIC(start_year,end_year) 
 
-  # Unmask the values int the original collection with some unique value - TODO not entirely clear if we need this 
-  # sr_collection = sr_collection.map(def (img) { 
-  # return ee.Image(img).unmask(-9999, false)
-  # })
+  # Unmask the values int the original collection with some unique value
+  sr_collection = sr_collection.map(mask_func)
 
   #changed to the kmeans stratified random points 
   sample_list = samplePts(kmeans_pts,sr_collection.toBands(),abstract=True).toList(num_points)
-
-  # Add a sequential ID to the samples
-#   seed_object = ee.List([ee.Feature(None, {"GRID_ID": -1})])
-#   samples = ee.FeatureCollection(
-#   ee.List(sample_list.iterate(add_sequential_id, seed_object)).slice(1)
-#   )
 
   # Generate the grid of points 
   point_grid = generate_point_grid(kmeans_pts.aggregate_array('cluster'), grid_res)
@@ -415,8 +409,8 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
   # Generate the synthetic image
   outputs = generate_synethetic_collection(point_grid, samples, start_year, end_year, grid_res)
   synthetic_collection = outputs[0]
-  grid_points = outputs[1]
-#   sample_locations = outputs[2]
+    #   grid_points = outputs[1]
+    #   sample_locations = outputs[2]
 
   # Export the synthetic collection to an output collection
   export_geometry = point_grid.geometry().bounds(ee.ErrorMargin(1e-3, 'projected'), PRJ)
@@ -429,7 +423,7 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
       task1 = ee.batch.Export.image.toAsset(
         image = synthetic_image, 
         description = "Asset-Synth-py-" + str(cur_year), 
-        assetId = assets_folder + "/synthetic_image_revised_" + str(cur_year), 
+        assetId = assets_folder + "/synthetic_image_" + str(cur_year), 
         region = export_geometry,
         scale = grid_res, 
         crs = PRJ, 
@@ -763,9 +757,7 @@ def snic01(snic_composites, aoi, random_pts, patch_size):
     snicPts = samplePts(snicPts, SNICimagery)
 
     return ee.List([snicPts, SNICimagery])
-    # return null
 
-#exports.snic01 = snic01
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # 02 kMeans # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

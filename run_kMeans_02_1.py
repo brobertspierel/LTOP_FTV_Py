@@ -9,28 +9,18 @@
 #         Robert Kennedy     | rkennedy@coas.oregonstate.edu
 #         Ben Roberts-Pierel | robertsb@oregonstate.edu
 # website: https:#github.com/eMapR/LT-GEE
-
-##################################################/
-################ Import modules ##########################/
-##################################################/
 import ee
-#from sys import path
-#path.append("/home/flipflop/PycharmProjects/pyLTOP/")
-# import params
 import ltop
-# print(ee.__version__)
-
-# Trigger the authentication flow.
-# ee.Authenticate()
 
 # Initialize the library.
 ee.Initialize()
 
-##################################################/
-################ Call the functions ########################/
-##################################################/
 # 2. cluster the snic patches with kmeans - added a filter to remove points that didn't get valid values in previous step
-def generate_tasks(*args): 
+def generate_kmeans_image(*args): 
+    '''
+    Generates a task that is the kmeans cluster image. This is used to determine where on the landscape 
+    we run different versions of LandTrendr. 
+    '''
     args = args[0]
     #note that paths need to be changed to access a Google cloud project 
     kmeans_output02_1 = ltop.kmeans02_1(ee.FeatureCollection(

@@ -10,26 +10,13 @@
 #         Ben Roberts-Pierel | robertsb@oregonstate.edu
 # website: https:#github.com/eMapR/LT-GEE
 
-##################################################/
-################ Import modules ##########################/
-##################################################/
 import ee 
-import params
 import ltop 
-
-# print(ee.__version__)
-
-# Trigger the authentication flow.
-# ee.Authenticate()
 
 # Initialize the library.
 ee.Initialize()
 
-##################################################/
-################ Call the functions ########################/
-##################################################/
-# 2. cluster the snic patches with kmeans - create the stratified random points - this was (usually) causing a computation timeout when doing it in one step
-def generate_tasks(*args): 
+def generate_kmeans_pts(*args): 
     '''
     Get a stratified random sample from the kmeans cluster image. This will yield a 
     featureCollection with one randomly assigned point per kmeans cluster id in the image. 

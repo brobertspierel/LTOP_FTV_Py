@@ -19,9 +19,7 @@ ee.Initialize()
 def generate_LTOP_breakpoints(*args):
    args = args[0]
    #naming convention based on previously generated image
-   #TODO temporarily renaming this asset for earlier params, change back!!
-   # cluster_img = ee.Image(args['assetsRoot']+args['assetsChild']+"/LTOP_KMEANS_cluster_image_"+str(args['randomPts'])+"_pts_"+str(args['maxClusters'])+"_max_"+str(args['minClusters'])+"_min_clusters_"+args['place']+"_c2_"+str(args['startYear']))
-   cluster_img = ee.Image(args['assetsRoot']+args['assetsChild']+"/LTOP_KMEANS_cluster_image_"+str(args['randomPts'])+"_pts_"+str(args['maxClusters'])+"_max_"+str(args['minClusters'])+"_min_clusters_"+"servir_comps_revised_c2_1990")#+str(args['startYear']))
+   cluster_img = ee.Image(args['assetsRoot']+args['assetsChild']+"/LTOP_KMEANS_cluster_image_"+str(args['randomPts'])+"_pts_"+str(args['maxClusters'])+"_max_"+str(args['minClusters'])+"_min_clusters_"+args['place']+"_c2_"+str(args['startYear']))
    #these composites are used for the last two steps and span the full period
    if args["imageSource"] == 'medoid':
       pass
