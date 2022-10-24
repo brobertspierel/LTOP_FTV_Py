@@ -4,20 +4,20 @@ As of LTOP version 0.1.0, the entire workflow runs from the GEE Python API and d
 
 The important components are:
 
-1. `run_ltop_complete.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_ltop_complete.py>`_  
-2. `ltop.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py>`_  
-3. `params.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/params.py>`_  
-4. `lt_params.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/lt_params.py>`_  
-5. `LandTrendr.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/LandTrendr.py>`_  
+* `run_ltop_complete.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_ltop_complete.py>`_  
+* `ltop.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py>`_  
+* `params.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/params.py>`_  
+* `lt_params.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/lt_params.py>`_  
+* `LandTrendr.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/LandTrendr.py>`_  
 and then the five module scripts from the original workflow:   
-6. `SNIC <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_SNIC_01.py>`_  
-8. `kmeans 2 <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_2.py>`_  
-7. `kmeans 1 <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_1.py>`_  
-9. `abstract image generation <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/abstract_sampling_03.py>`_  
-10. `run LT for abstract images <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/abstract_imager_04.py>`_  
-11. `create LTOP breakpoints <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/generate_LTOP_05.py>`_  
+* `SNIC <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_SNIC_01.py>`_  
+* `kmeans 2 <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_2.py>`_  
+* `kmeans 1 <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_1.py>`_  
+* `abstract image generation <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/abstract_sampling_03.py>`_  
+* `run LT for abstract images <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/abstract_imager_04.py>`_  
+* `create LTOP breakpoints <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/generate_LTOP_05.py>`_  
 
-**Note**  
+**Note**    
 The only script that user should really be concerned with is the run_ltop_complete.py and even then, 
 that script defines a single class that could be called externally (see below for examples). 
 
