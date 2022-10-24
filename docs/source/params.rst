@@ -51,10 +51,8 @@ NOTE that as of 10/18/2022, the necessary code to run medoid composites does not
 "startDate":'11-20',  
 "endDate": '03-10',  
 "masked": ['cloud', 'shadow']  
-
-===============  
-Other arguments  
-===============  
+  
+**Other arguments**  
 
 The class that runs LTOP takes the param dictionary as the primary input, passed as \*args, and then a max_time argument which can be passed separately to the class. This defines the time you want the program to wait before re-checking if a process or task is complete. There is not a 'perfect' answer here but it is mostly in place so that the program does not try to query Google's servers every half second.  
  

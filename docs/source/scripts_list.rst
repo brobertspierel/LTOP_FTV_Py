@@ -3,7 +3,6 @@ List of important scripts for running the LTOP workflow
 As of LTOP version 0.1.0, the entire workflow runs from the GEE Python API and does not require the user to run individual steps manually. The entire workflow is now autmoated and just requires that the user set up certain components in advance of a run. The pertinent scripts are now available from the [GitHub repo](https://github.com/eMapR/LTOP_FTV_Py). 
 
 The important components are:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. `run_ltop_complete.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_ltop_complete.py>`_  
 2. `ltop.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py>`_  
