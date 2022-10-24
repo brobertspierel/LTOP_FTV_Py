@@ -12,8 +12,7 @@ out this workflow. Note that to produce temporally stabilized outputs of an exis
 see the SERVIR_stabilization `GitHub repository <https://github.com/eMapR/SERVIR_stabilization>`_. 
 
 `General overview of theory and background <https://docs.google.com/presentation/d/1ra8y7F6_vyresNPbT3kYamVPyxWSfzAm7hCMc6w8N-M/edit?usp=sharing>`_
-
-Workflow conceptual diagram: 
+ 
 .. image:: images/LTOP_in_GEE.png
 
 **Important**
