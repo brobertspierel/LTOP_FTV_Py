@@ -1,9 +1,10 @@
-# LTOP Overview
-
+LTOP Overview
+=============
 version: 0.0.3
 
-## These docs and the associated python scripts are currently (10/18/2022) in testing and subject 
+These docs and the associated python scripts are currently (10/18/2022) in testing and subject 
 to change. 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 LandTrendr (LT) is a set of spectral-temporal segmentation algorithms that focuses on removing the 
 natural spectral variations in a time series of Landsat Images. Stabilizing the natural variation 

@@ -7,9 +7,9 @@ background for the process, some information on the general overview of the work
 could be set up for somebody to actually run. We then go through the steps to produce LTOP output,
  how the outputs can be assessed and then some of the pitfalls one might run into while carrying 
  out this workflow. Note that to produce temporally stabilized outputs of an existing time series 
- see the SERVIR_stabilization [GitHub repository](https://github.com/eMapR/SERVIR_stabilization). 
+ see the SERVIR_stabilization `GitHub repository <https://github.com/eMapR/SERVIR_stabilization>`_. 
 
-`General overview of theory and background <https://docs.google.com/presentation/d/1ra8y7F6_vyresNPbT3kYamVPyxWSfzAm7hCMc6w8N-M/edit?usp=sharing>`
+`General overview of theory and background <https://docs.google.com/presentation/d/1ra8y7F6_vyresNPbT3kYamVPyxWSfzAm7hCMc6w8N-M/edit?usp=sharing>`_
 
 Workflow conceptual diagram: 
-.. image:: `<https://docs.google.com/drawings/d/e/2PACX-1vQ9Jmb4AhD86GedXTH798O4hGCNDyCp-ZMcYEB1Ij8fuhNqc4xhDuO3x9JSttq6Tk2g9agWP2FWhoU-/pub?w=960&h=720>`
+.. image:: `<https://docs.google.com/drawings/d/e/2PACX-1vQ9Jmb4AhD86GedXTH798O4hGCNDyCp-ZMcYEB1Ij8fuhNqc4xhDuO3x9JSttq6Tk2g9agWP2FWhoU-/pub?w=960&h=720>`_
