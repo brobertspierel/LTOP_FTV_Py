@@ -46,19 +46,20 @@ class RunLTOPFull(object):
     def __init__(self,*args,max_time=1200): 
         self.args = args[0] #call args as params.params externally
         self.max_time = max_time
+        self.gee_cwd = self.args['assetsRoot']+self.args['assetsChild']
     
     def check_for_wd(self): 
         '''
         Look in the assets folders to see if the intended directory is there. 
         If its not then make it. 
         '''
-        wd = self.args['assetsRoot']+self.args['assetsChild']
+        # wd = self.gee_cwd
         folders = ee.data.listAssets({'parent':self.args['assetsRoot']})
         folders = [i for i in folders['assets'] if i['type'] == 'FOLDER']
-        target = [i for i in folders if i['name'] == wd]
+        target = [i for i in folders if i['name'] == self.gee_cwd]
         if len(target) == 0: 
-            print(f'The working directory {wd} does not exist, creating...')
-            ee.data.createAsset({'type':'FOLDER'},wd)
+            print(f'The working directory {self.gee_cwd} does not exist, creating...')
+            ee.data.createAsset({'type':'FOLDER'},self.gee_cwd)
         else: 
             print('The working directory already exists, proceeding...')
 
@@ -78,7 +79,7 @@ class RunLTOPFull(object):
         to see when all the assets are done. There is probably a more efficient way to do this.
         '''
         #the output is like: {'assets':[{dict with metadata on each asset}]}
-        assets = ee.data.listAssets({'parent':self.args['assetsRoot']+self.args['assetsChild']})
+        assets = ee.data.listAssets({'parent':self.gee_cwd})
         #subset the assets to just their names that contain 'synthetic'
         assets = [a['name'] for a in assets['assets']] #if 'synthetic' in a['name']]
         #now check if all of our years are there- returns True if yes, False if no
@@ -118,7 +119,7 @@ class RunLTOPFull(object):
         
         #now check kmeans 
         kmeans_img_path = self.args["assetsRoot"] +self.args["assetsChild"] + "/LTOP_KMEANS_cluster_image_" + str(self.args["randomPts"]) + "_pts_" + str(self.args["maxClusters"]) + "_max_" + str(self.args["minClusters"]) + "_min_clusters_" + self.args["place"] + "_c2_" + str(self.args["startYear"])
-        kmeans_pts_path = self.args['assetsRoot']+self.args['assetsChild']+'/LTOP_KMEANS_stratified_points_'+str(self.args['maxClusters'])+'_max_'+str(self.args['minClusters'])+'_min_clusters_'+self.args['place']+'_c2_'+str(self.args['startYear'])
+        kmeans_pts_path = self.gee_cwd+'/LTOP_KMEANS_stratified_points_'+str(self.args['maxClusters'])+'_max_'+str(self.args['minClusters'])+'_min_clusters_'+self.args['place']+'_c2_'+str(self.args['startYear'])
         proceed = self.check_assets_presence([kmeans_img_path])
         if not proceed: 
             print('kmeans image does not yet exist, creating...')
@@ -158,7 +159,9 @@ class RunLTOPFull(object):
         #TODO this needs to have logic added to also catch/not rerun the grid points asset 
         abs_imgs_list = []
         for year in range(self.args['startYear'],self.args['endYear']+1): 
-            abs_imgs_list.append(self.args['assetsRoot']+self.args['assetsChild'] + "/synthetic_image_" + str(year))
+            abs_imgs_list.append(self.gee_cwd + f"/{self.args['place']}_synthetic_image_" + str(year))
+        #also add the grid points because otherwise this might cause an error
+        abs_imgs_list.append(self.gee_cwd+f"/{self.args['place']}_abstract_images_point_grid")
         start_time = time.time()
         #while True: 
             #the logic here is a little different than previous steps because there is an 
@@ -181,7 +184,7 @@ class RunLTOPFull(object):
                 else: 
                     pass
         else: 
-            print('The abstract images already exist, proceeding to param selection')
+            print('The abstract images and point grid already exist, proceeding to param selection')
         
         #4. run the extraction of spectral information from abstract image points/kmeans points
         #check if the 04 csv output already exists
@@ -191,7 +194,8 @@ class RunLTOPFull(object):
         names = []
         for i in range(len(indices)): 
             names.append("LTOP_" + self.args['place'] + "_abstractImageSample_lt_144params_" + indices[i] + "_c2_selected"+".csv")
-        
+        #build the file names list so regardless of whether we need to generate or not it won't throw an error 
+        out_fns = [self.args['param_scoring_inputs']+f for f in names]
         #check if the indices files have already been generated and sent to GCS bucket
         proceed = ltop.check_multiple_gcs_files(names,self.args['cloud_bucket'])
         if not proceed: #the files have not been generated
@@ -209,11 +213,14 @@ class RunLTOPFull(object):
             #make sure the intended destination dir exists
             if not os.path.exists(self.args['param_scoring_inputs']): 
                 os.mkdir(self.args['param_scoring_inputs'])
-            out_fns = [self.args['param_scoring_inputs']+f for f in names]
             #trigger the download of the csv files from GCS bucket
             #TODO decide if this should just get everything in a specific folder
             #TODO add a check to not download if these files already exist
-            ltop.download_multiple_from_bucket(self.args['cloud_bucket'],names,out_fns)
+            if all (os.path.isfile(f) for f in out_fns): 
+                print('The csv of params have already been downloaded')
+            else: 
+                print('The csvs of params have not been downloaded, downloading...')
+                ltop.download_multiple_from_bucket(self.args['cloud_bucket'],names,out_fns)
         
         #now check for the downloaded files
         while True: 
@@ -257,21 +264,25 @@ class RunLTOPFull(object):
         
         #now create an asset from the uploaded csv over in GEE
         #check if an asset exists - for the naming, :-4 is just stripping the ext
-        proceed = self.check_assets_presence([self.args['assetsRoot']+self.args['assetsChild']+'/'+selected_params_fn[:-4]])
+        proceed = self.check_assets_presence([self.gee_cwd+'/'+selected_params_fn[:-4]])
         if proceed: 
             print('The asset of selected params already exists')
         else: 
+            #TODO something is going wrong here where its hanging when you actually create the asset. Its also printing something of unknown origin. 
             print("Creating selected params asset...")
-            ltop.create_gee_asset_from_gcs(selected_params_fn[:-4],f"gs://{self.args['cloud_bucket']}/{selected_params_fn}",self.args['assetsRoot']+self.args['assetsChild'])
+            ltop.create_gee_asset_from_gcs(selected_params_fn[:-4],f"gs://{self.args['cloud_bucket']}/{selected_params_fn}",self.gee_cwd)
+            print('I am going to check something that looks like: ',self.gee_cwd+selected_params_fn[:-4])
             while True: 
-                check_status = self.check_assets_presence([self.args['assetsRoot']+self.args['assetsChild']+selected_params_fn[:-4]])
+                check_status = self.check_assets_presence([self.gee_cwd+'/'+selected_params_fn[:-4]])
                 if check_status: 
                     print('The selected params have been successfully uploaded')
                     break
                 else: 
                     time.sleep(10) #TODO check time 
         bps_fn = 'Optimized_LT_'+str(self.args['startYear'])+'_start_'+self.args['place']+'_all_cluster_ids_tc'
-        proceed = self.check_assets_presence([self.args['assetsRoot']+self.args['assetsRoot']+'/'+bps_fn])
+        proceed = self.check_assets_presence([self.gee_cwd+'/'+bps_fn])
+        #TODO might not need to keep this running the whole time, its set up like this so you can monitor if its has failed but it could take many hours to run for 
+        #a big area. 
         if not proceed: 
             print('The final breakpoints do not exist, creating')
             lt_vertices_status = make_bps.generate_LTOP_breakpoints(self.args)
@@ -290,8 +301,8 @@ class RunLTOPFull(object):
             print('The final output breakpoints already exist')
         
 # #run it- not sure if we want to run from this script or from somewhere else
-# # if __name__ == '__main__': 
+# if __name__ == '__main__': 
 # #     main()
-#max time is set this low just for testing 
-test = RunLTOPFull(params.params,max_time = 1200)
-test.runner()
+#     #max time is set this low just for testing 
+#     test = RunLTOPFull(params.params,max_time = 1200)
+#     test.runner()

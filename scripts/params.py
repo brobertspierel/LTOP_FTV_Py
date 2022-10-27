@@ -20,8 +20,8 @@ geometry = ee.Geometry.Polygon(
 place = 'Cambodia_full'
 assetsRoot = 'projects/ee-ltop-py/assets/'
 assetsChild = 'LTOP_py_Cambodia'
+
 params = {
-    "version": '0.1.0',
     "place": place,
     "startYear": 1990,
     "endYear": 2021,
@@ -43,7 +43,7 @@ params = {
     #these should be local directories
     #this one will be created automatically if it does not exist 
     "param_scoring_inputs": f"/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/output_04_{place}/",
-    "outfile": f"/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/selected_lt_params/LTOP_{place}_tc.csv",
+    "outfile": f"/vol/v1/general_files/user_files/ben/LTOP_FTV_py_revised/selected_lt_params/LTOP_{place}_selected_LT_params_tc.csv",
     "njobs": 8, 
     #note that this must be set up in advance, the script will not do it for you!!
     "cloud_bucket":"ltop_assets_storage",

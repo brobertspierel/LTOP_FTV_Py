@@ -8,15 +8,14 @@
 # website: https: # github.com / eMapR / LT - GEE
 
 import ee
-import params
 import lt_params as runParams
 import pandas as pd 
 import LandTrendr as ltgee
 from google.cloud import storage
 import subprocess
 
-version = params.params["version"]
-print('LTOP version: ',version)
+version = '0.1.0'
+print('LTOP version: ', version)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # Build an imageCollection from SERVIR comps # # # # # # # # # # # # # # # # /
@@ -62,14 +61,15 @@ def runSNIC(composites, aoi, patchSize):
     '''
     Run the GEE SNIC algorithm to 'patchify' a landscape.
     '''
-    snicImagery = ee.Algorithms.Image.Segmentation.SNIC(image= composites,size= patchSize, compactness= 1, ).clip(aoi)
+    snicImagery = ee.Algorithms.Image.Segmentation.SNIC(image= composites,
+                                                        size= patchSize, 
+                                                        compactness= 1, ).clip(aoi)
     return snicImagery
-
-#exports.runSNIC = runSNIC
 
 # now split the SNIC bands
 
 def getSNICmeanBands(snic_output):
+    #TODO there is something going wrong here that is replicating bands and we're getting more than we should 
     return snic_output.select(snic_output.bandNames())#["seeds", "clusters", "B1_mean", "B2_mean", "B3_mean", "B4_mean", "B5_mean", "B7_mean", "B1_1_mean", "B2_1_mean","B3_1_mean", "B4_1_mean", "B5_1_mean", "B7_1_mean", "B1_2_mean", "B2_2_mean", "B3_2_mean", "B4_2_mean","B5_2_mean", "B7_2_mean"])
 
 def getSNICseedBands(snic_output):
@@ -196,7 +196,7 @@ def generate_point_grid (cluster_ids, resolution,PRJ = "EPSG:3857"):
         # Construct the point geometry
         pt_geo = ee.Geometry.Point([x, y], PRJ)
 
-        # Construct the output feature the join property ID
+        # Construct the output feature then join property ID
         pt = ee.Feature(pt_geo, {"cluster_id": i})
 
         # Increment the row position by the desired resolution
@@ -230,7 +230,7 @@ def loop_over_year(index,start_year,resolution,buffers,PRJ = "EPSG:3857"):
     b3 = ee.Image([0]).toInt16().paint(current_props, "TCG").reproject(PRJ, None, resolution).rename('TCG')
     b4 = ee.Image([0]).toInt16().paint(current_props, "NDVI").reproject(PRJ, None, resolution).rename('NDVI')
     b5 = ee.Image([0]).toInt16().paint(current_props, "B5").reproject(PRJ, None, resolution).rename('B5')
-    #  b7 = ee.Image([0]).toInt16().paint(current_props, "B7").reproject(PRJ, null, resolution).rename('B7')
+    # b6 = ee.Image([0]).toInt16().paint(current_props, "B7").reproject(PRJ, None, resolution).rename('B7')
     synthetic = ee.Image.cat([b1, b2, b3, b4, b5]).rename(new_names)
 
 
@@ -260,14 +260,14 @@ def generate_synethetic_collection (point_grid, samples, start_year, end_year, r
     point_grid = ee.FeatureCollection(point_grid)
     samples = ee.FeatureCollection(samples)
 
-    # Join the two collections togeheter using the cluster_id property
+    # Join the two collections together using the cluster_id property
     join_filter = ee.Filter.equals(leftField = 'cluster_id', rightField = 'cluster_id')
     join_opperator = ee.Join.inner('primary', 'secondary')
     joined = join_opperator.apply(point_grid, samples, join_filter)
 
     # Unpack the join results
     grid_with_spectral = joined.map(lambda x: unpack_inner_join_output(x))
-
+    # print(grid_with_spectral.getInfo())
     # Buffer the desired properties into squares
     error = ee.ErrorMargin(1, 'projected')
     buffers = grid_with_spectral.map(lambda x: buffer_func(x,resolution,error))
@@ -281,7 +281,7 @@ def generate_synethetic_collection (point_grid, samples, start_year, end_year, r
 def mask_func(img): 
   return ee.Image(img).unmask(-9999, False)
 
-def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,start_year,end_year,PRJ = "EPSG:3857"):
+def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,start_year,end_year,place,PRJ = "EPSG:3857"):
   '''
   Creates synthetic images in GEE by: 
   1. gets time series of imagery
@@ -295,12 +295,7 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
   # Specify the number of points to be extracted
   num_points = kmeans_pts.size().getInfo()
 
-  ##/ Code ##
-
-  # TODO Generate a time-series from servir composites - this could also be passed as an arg? 
-#   sr_collection = ltop.buildSERVIRcompsIC(start_year,end_year) 
-
-  # Unmask the values int the original collection with some unique value
+  # Unmask the values in the original collection with some unique value
   sr_collection = sr_collection.map(mask_func)
 
   #changed to the kmeans stratified random points 
@@ -309,7 +304,7 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
   # Generate the grid of points 
   point_grid = generate_point_grid(kmeans_pts.aggregate_array('cluster'), grid_res)
 
-  samples = ee.FeatureCollection(sample_list) #note that this is hard coded 
+  samples = ee.FeatureCollection(sample_list) 
 
   # Generate the synthetic image
   outputs = generate_synethetic_collection(point_grid, samples, start_year, end_year, grid_res)
@@ -328,7 +323,7 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
       task1 = ee.batch.Export.image.toAsset(
         image = synthetic_image, 
         description = "Asset-Synth-py-" + str(cur_year), 
-        assetId = assets_folder + "/synthetic_image_" + str(cur_year), 
+        assetId = assets_folder + f"/{place}_synthetic_image_" + str(cur_year), 
         region = export_geometry,
         scale = grid_res, 
         crs = PRJ, 
@@ -340,7 +335,7 @@ def generate_abstract_images(sr_collection,kmeans_pts,assets_folder,grid_res,sta
   task2 = ee.batch.Export.table.toAsset(
     collection = point_grid,
     description = "Asset-GridPoints-py", 
-    assetId = assets_folder + "/abstract_images_point_grid"
+    assetId = assets_folder + f"/{place}_abstract_images_point_grid"
   )
   task2.start()
   return None
@@ -653,7 +648,7 @@ def snic01(snic_composites, aoi, random_pts, patch_size):
 
     SNICpixels = SNICmeansImg(SNICoutput, aoi)
 
-    # these were previouslythe two things that were exported to drive
+    # these were previously the two things that were exported to drive
 
     SNICimagery = SNICoutput.toInt32() #.reproject({crs: 'EPSG:4326', scale: 30}) # previously snicImagery
 
@@ -665,7 +660,6 @@ def snic01(snic_composites, aoi, random_pts, patch_size):
         points= random_pts,
         seed= 10
     )
-
     # do the sampling
     snicPts = samplePts(snicPts, SNICimagery)
 
@@ -701,7 +695,7 @@ def kmeans02_2(kmeans_imagery, aoi):
 def rename_kmeans(feat):
     return feat.set('cluster_id', feat.get('cluster'))
 
-def abstractSampler03_1(full_timeseries, kMeansPts, assets_folder, grid_res, startYear, endYear):
+def abstractSampler03_1(full_timeseries, kMeansPts, assets_folder, grid_res, startYear, endYear,place):
 
     # rename the kmeans points dataset cluster col to cluster_id, that 's what the remaining scripts expect
     kMeansPts = kMeansPts.map(rename_kmeans)
@@ -710,7 +704,7 @@ def abstractSampler03_1(full_timeseries, kMeansPts, assets_folder, grid_res, sta
     images_w_indices = computeIndices(full_timeseries)
 
     #this is set up to just trigger the creation of the abstract images 
-    abstractImageOutputs = generate_abstract_images(images_w_indices,kMeansPts,assets_folder,grid_res,startYear,endYear)
+    abstractImageOutputs = generate_abstract_images(images_w_indices,kMeansPts,assets_folder,grid_res,startYear,endYear,place)
 
     return abstractImageOutputs
 
