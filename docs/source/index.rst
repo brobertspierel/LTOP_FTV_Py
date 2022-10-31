@@ -6,7 +6,7 @@
 Documentation for LandTrendr Optimization (LTOP)
 ========================================
 
-.. image:: images/LT_logo.png
+.. image:: images/LT_logo.jpg
 
 The LandTrendr algorithm is a temporal segmentation algorithm built mostly for the Lansat image archive. It can be used for change detection analysis and temporal stabilization/homogenization 
 of image time series. One issue with the LandTrendr algorithm is that it can be paramaterized in different ways depending on the target land cover/land change class(es) and the 
