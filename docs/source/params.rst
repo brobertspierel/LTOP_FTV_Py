@@ -1,16 +1,21 @@
-What does params.py contain?
+What does the params.py contain?
 ============================
-params.py gets imported as a python module in the LTOP workflow. Contained within the params.py script is a single dictionary that is accessible by the external programs that call it. This dictionary contains all of the necessary components to run the full workflow. There are a few optional arguments that are currently (10/18/2022) set as defaults in various functions. See below for notes on those. 
+params.py gets imported as a python module in the LTOP workflow. Contained within the params.py script is a single dictionary that is accessible by the external programs that call it. 
+This dictionary contains all of the necessary components to run the full workflow. There are a few optional arguments that are currently (10/18/2022) set as defaults in 
+various functions. See below for notes on those. **NOTE** that this is not the ideal way of dealing with these params and depending on the platform and configuration in which the 
+workflow is run it could expose your system to security concerns. This format is going to be amended in a future version to deal with that and to account for the condition that 
+the user wants to run multiple AOIs in sequence. 
 
-The first three assets are set first, they are re-used below to construct additional inputs.   
+The first three assets are set first, they are re-used below to construct additional inputs.  
+
 place: str   
-	This will be used in naming construction throughout the process so give it a meaningful name   
+	This will be used in naming construction throughout the process so give it a short, meaningful name   
 assetsRoot: str   
-	This will be either your 'users/username' or moving to the future requirements for GEE it should be linked to a gcloud project and would look like: 'projects  name-of-your-project/assets/', for example.   
+	This will be either your 'users/username' or moving to the future requirements for GEE it should be linked to a gcloud project and would look like: 'projects/name-of-your-project/assets/', for example.   
 assetsChild: str  
 	The folder you want your assets to end up in inside your project. Note that the script will create this folder if it does not find it in your project repo.  
 
-The remainder of the inputs are defined inside a dictionary called params and are callable by outside scripts by key.  
+The remainder of the inputs are defined inside a dictionary called params and are callable by outside scripts by key. Expect a change in this format in a future version.
 version:   
 	0.1.0 as of 10/18/2022 with the 0.1 designating the shift to Python.   
 place: str   
@@ -20,11 +25,12 @@ startYear: int
 endYear: int  
 	Most recent full year available in input imagery  
 seedSpacing: int  
-	This defines the starting seed spacing for the SNIC algorithm. The default should be 10. See GEE documentation for more information on this param. It only needs to be changed if you are interested in the specific effects of the SNIC inputs/outputs.  
+	This defines the starting seed spacing for the SNIC algorithm. The default is 10. See GEE documentation for more information on this param. It only needs to be changed if you are interested in the specific effects of the SNIC inputs/outputs.  
 randomPts: int  
-	The number of random points we use to sample the SNIC imagery. There is not a best known value but generally more is better. Default should be 20,000. You can try more, we don't necessarily recommend less. This seemed sufficient for an area the size of SE Asia.  
+	The number of random points we use to sample the SNIC imagery. There is not a best known value but generally more is better. Default is 20,000. 
+	You can try more, we don't necessarily recommend less but this depends on the area you are running. This seemed sufficient for an area the size of SE Asia.  
 imageSource: str  
- One of either 'servir' or 'medoid'. Note that as of 10/18/2022 the functionality for medoids does not currently exist.  
+ One of either 'servir' or 'medoid'. The default is that anything not specified as medoid will choose servir composites. Note that as of 10/18/2022 the functionality for medoids does not currently exist.  
 assetsRoot: str  
 	Defined from assetsRoot variable above.  
 assetsChild: str  
@@ -36,16 +42,16 @@ maxClusters: int
 minClusters: int  
 	Generally set to the same as maxClusters but could be set lower.  
 selectedLTparams: GEE FC  
-	This will just be constructed for you from the other input params.  
+	Leave defaults and this will just be constructed for you from the other input params.  
 param_scoring_inputs: str, filepath like  
 	Filepath to a local directory where you want the LT outputs from running on abstract image points to reside. Note that this folder will be created for you in the script if you have not created it in advance.  
 outfile: str, filepath like  
 	This should be a local directory where you want the selected LT params for generating LTOP breakpoints to end up. Note that the folder will be created for you if you have not created it in advance.  
 njobs: int  
-	Number of cores to use in param selection. This will likely be changed in future versions.  
-#note that this must be set up in advance, the script will not do it for you!!  
+	Number of cores to use in param selection. This will likely be changed in future versions.    
 cloud_bucket: str, GCS cloud bucket name  
-	This is the name of a cloud bucket in a Google Cloud Services account. See notes below for setting this up.  
+	This is the name of a cloud bucket in a Google Cloud Services account. See notes in `general setup <general_setup.rst>` for setting this up. Note that the program will not do this for you, 
+	you need to manually do this in advance of running or you will hit an error. 
 
 NOTE that as of 10/18/2022, the necessary code to run medoid composites does not yet exist. When that is done, the below args will be required to generate medoid composites from existing LandTrendr modules.   
 "startDate":'11-20',  
@@ -54,5 +60,6 @@ NOTE that as of 10/18/2022, the necessary code to run medoid composites does not
   
 **Other arguments**  
 
-The class that runs LTOP takes the param dictionary as the primary input, passed as \*args, and then a max_time argument which can be passed separately to the class. This defines the time you want the program to wait before re-checking if a process or task is complete. There is not a 'perfect' answer here but it is mostly in place so that the program does not try to query Google's servers every half second.  
+The class that runs LTOP takes the param dictionary as the primary input, passed as \*args, and then a max_time argument which can be passed separately to the class. This defines the time you want the program to wait before re-checking if a process or task is complete. 
+There is not a 'perfect' answer here but it is mostly in place so that the program does not try to query Google's servers every iteration of a while loop.  
  

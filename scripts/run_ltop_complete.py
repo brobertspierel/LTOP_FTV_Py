@@ -178,9 +178,9 @@ class RunLTOPFull(object):
                     print('The abstract images are done generating, proceeding...')
                     break 
                 elif (time.time() - start_time) > self.max_time: 
-                    print(f'The abstract image generation took longer than {self.max_time}')
+                    print(f'The abstract image generation took longer than {self.max_time*10}') #TODO find a better solution to this issue
                     print('The process stopped. Check for errors or increase max_time arg (defaults to 1200 seconds)')
-                    break
+                    # break
                 else: 
                     pass
         else: 
@@ -205,6 +205,12 @@ class RunLTOPFull(object):
                 check_status = ltop.check_multiple_gcs_files(names,self.args['cloud_bucket'])
                 if check_status: 
                     print('The csvs for LT outputs on abstract images are done')
+                    if not os.path.exists(self.args['param_scoring_inputs']): 
+                        os.mkdir(self.args['param_scoring_inputs'])
+                    #trigger the download of the csv files from GCS bucket   
+                    #assumes we've generated the files and the dest local directory exists
+                    print('Downloading csv files from GCS')
+                    ltop.download_multiple_from_bucket(self.args['cloud_bucket'],names,out_fns)
                     break
                 else: 
                     time.sleep(self.max_time/10) #TODO this time is somewhat arbitrary

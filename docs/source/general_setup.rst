@@ -18,10 +18,11 @@ see the SERVIR_stabilization `GitHub repository <https://github.com/eMapR/SERVIR
 **Important**
 
 Before starting, there are a few things you must do. The first and most important is to update the params.py 
-file according to the directions laid out above. The second and crucial element is to set up the necessary components for GCS. 
+file according to the directions laid out above. The second crucial element is to set up the necessary components for GCS. 
 
 Instructions for setting up GCS: 
-NOTE that if you are a regular user of GCS and already have projects/buckets created you can likely skip this step or amend how the code is working to suite your needs. This is meant to be a starter for those who have not used GCS before. 
+NOTE that if you are a regular user of GCS and already have projects/buckets created you can likely skip this step or amend how the code is working to suite your needs. This is meant to be a starter for those who have not used GCS before.    
+
 1. Create or check to see that you have a `GCS account <https://cloud.google.com/gcp?utm_source=google&utm_medium=cpc&utm_campaign=na-US-all-en-dr-bkws-all-all-trial-e-dr-1011347&utm_content=text-ad-none-any-DEV_c-CRE_622022396323-ADGP_Desk%20%7C%20BKWS%20-%20EXA%20%7C%20Txt%20~%20Google%20Cloud%20Platform%20Core-KWID_43700073027148699-kwd-6458750523&utm_term=KW_google%20cloud-ST_google%20cloud&gclid=Cj0KCQjwnbmaBhD-ARIsAGTPcfXFH3iizzepFJ4jBJwrT_T5t2HBrNZed5qcdRsU6FgZZ7oxvDTGKF8aAvjAEALw_wcB&gclsrc=aw.ds>`_
 
 2. Install the google-cloud-storage python module. Follow `these directions <https://cloud.google.com/sdk/docs/install>`_ to install the google cloud sdk. 

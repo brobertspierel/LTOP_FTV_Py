@@ -1,6 +1,6 @@
 List of important scripts for running the LTOP workflow
 =======================================================
-As of LTOP version 0.1.0, the entire workflow runs from the GEE Python API and does not require the user to run individual steps manually. The entire workflow is now autmoated and just requires that the user set up certain components in advance of a run. The pertinent scripts are now available from the [GitHub repo](https://github.com/eMapR/LTOP_FTV_Py). 
+As of LTOP version 0.1.0, the entire workflow runs from the GEE Python API and does not require the user to run individual steps manually. The entire workflow is now automated and just requires that the user set up certain components in advance of a run. The pertinent scripts are now available from the `GitHub repo <https://github.com/eMapR/LTOP_FTV_Py>`_. 
 
 The important components are:
 
@@ -9,7 +9,8 @@ The important components are:
 * `params.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/params.py>`_  
 * `lt_params.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/lt_params.py>`_  
 * `LandTrendr.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/LandTrendr.py>`_  
-and then the five module scripts from the original workflow:   
+and then the five module scripts from the original workflow:    
+
 * `SNIC <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_SNIC_01.py>`_  
 * `kmeans 2 <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_2.py>`_  
 * `kmeans 1 <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_kMeans_02_1.py>`_  
