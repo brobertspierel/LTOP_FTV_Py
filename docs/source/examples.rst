@@ -4,10 +4,8 @@ Example LTOP creation
 The LTOP workflow can be run from the run_ltop_complete.py script or it can be instantiated 
 from elsewhere with the following code: 
 
-.. code-block:: python 
-
-    example = RunLTOPFull(params.params,max_time = 60)  
-    example.runner()
+``example = RunLTOPFull(params.params,max_time = 60)``  
+``example.runner()``
 
 where params.params is the result of import params and then referencing the dictionary inside the module. This means that one could also 
 do something like:    
