@@ -624,7 +624,7 @@ def create_gee_asset_from_gcs(asset_id,gcloud_uri,gee_assets_dir):
     asset_id = gee_assets_dir+'/'+asset_id
     print('asset id is: ',asset_id)
     print('and glcoud uri is: ',gcloud_uri)
-    #this commandline version works: earthengine upload table --asset_id=projects/ee-ltop-py/assets/LTOP_full_run/LTOP_cambodia_tc gs://ltop_assets_storage/LTOP_Cambodia_tc.csv
+    #this commandline version works: earthengine upload table --asset_id=projects/ee-ltop-py/assets/LTOP_full_run/LTOP_cambodia_tc gs:#ltop_assets_storage/LTOP_Cambodia_tc.csv
     # gee_params = {
     #     'name':asset_id,
     #     'uris':gcloud_uri,
@@ -633,6 +633,162 @@ def create_gee_asset_from_gcs(asset_id,gcloud_uri,gee_assets_dir):
     subprocess.run(f'earthengine upload table --asset_id={asset_id} {gcloud_uri}',shell=True)
     # ee.data.startIngestion(request_id=request_id, params=gee_params)
     return None 
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
+# # # # # # # # # # # # # # # # Stabilization functions # # # # # # # # # # # # # # # # # # # # # # # # /
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
+
+#the outputs of LTOP have to be converted to an array and empty (0) entries have to be removed 
+def prepBreakpoints(ltop_output): 
+    arr = ltop_output.toArray() 
+    mask = ltop_output.gt(0).toArray()
+    #apply the mask to the array   
+    return arr.arrayMask(mask)  
+
+#example run
+# prepBreakpoints = prepBreakpoints_helper(ltop_output)
+    
+###################################################/
+
+#prepare the breakpoints for use in the LandTrendr fit algorithm
+#get the bp years between two end point years. In the case that there is no bp in the start year we need to set that as a breakpoint 
+#so the time series is bookended when we do the fit 
+def clipBreakpoints(startYear,LTOP_band,lt_vert): 
+    '''
+    #this function is only required if the input imageCollection is shorter than the thing you used to create breakpoints
+    #LTOP_band is a band that doesn't exist in the inputs but is structured in the same way
+    #lt_vert is the output of the LTOP process and should be an array image of LT breakpoints 
+  
+    '''
+    #create an image of constant value with starting year val. This will be used to ensure we have the starting bp
+    yearImg = ee.Image.constant(startYear).select(['constant'],[LTOP_band]) 
+
+    #get the array of breakpoints from the LTOP outputs 
+    bps = lt_vert.toArray() 
+  
+    #create a mask that gets rid of everything before the start year plus one. We add one to make sure that when we add the start 
+    #year back in we don't get the start year twice (duplicate breakpoints)
+    mask = lt_vert.gte(startYear+1).toArray() 
+  
+    #apply the mask to the array 
+    bps = bps.arrayMask(mask) 
+    #add the constant image above as an array with the start year as the constant value
+    bps = bps.arrayCat(
+    image2=yearImg.toArray(),
+    axis=0
+    ) 
+    #sort the array values so that the breakpoint years are in chronological order after adding a band
+    bps = bps.arraySort() 
+    return bps  
+
+
+# Insert a process that selects different spikeThreshold params for LT based on the different K-means clusters from the optimization process. This is a masking process
+#whereby each of the options for spikeThreshold are selected and used as a mask to run different paramaterizations of LT-fit and then those are patched backtogether at the end.
+def runLTfit_helper(spike,table,kmeans_image):
+     #the output of this function is a list of masks, each mask has the value of the spikeThreshold for the clusters that should be 
+    #run with that value in those places
+    #first we have to get any pixels that have a cluster id with the spikeThreshold value we're looking for 
+    clusters = table.filter(ee.Filter.eq('spikeThreshold',spike)) 
+    #then we get a list of all the cluster_ids with that spike threshold value
+    clusters = clusters.aggregate_array('cluster_id') 
+    #next we get all the pixels from the cluster image that match the cluster ids selected in the previous step (create a mask)
+    mask = kmeans_image.remap(clusters,ee.List.repeat(1,clusters.length())) 
+    #add a prop with the spikeThreshold value so we can query it later
+    return mask.set('spikeThreshold',spike) 
+
+def runLTfit_mask_helper(msk,ic,breakpoints,min_obvs): 
+    #map over the ic, masking each image in the collection as we go
+    ic = ic.map(lambda img: img.updateMask(msk))
+    #run LandTrendr
+    lt_servir = ee.Algorithms.TemporalSegmentation.LandTrendrFit(
+        timeSeries=ic,
+        vertices=breakpoints,
+        spikeThreshold=msk.get('spikeThreshold'),
+        minObservationsNeeded=min_obvs
+      )
+    return lt_servir 
+
+def runLTfit(table,input_ic,breakpoints,kmeans_image,min_obvs): 
+    #first get all the possible spikeThreshold values 
+    spike_vals = table.aggregate_array('spikeThreshold').distinct() 
+
+    #go through the distinct spikeThreshold vals, filter or mask the image 
+    #to get each value and use that as a mask to get the areas of the constant image that we want 
+    
+    
+    filter_pixels = spike_vals.map(lambda x: runLTfit_helper(x,table,kmeans_image))
+  
+    #these are the masks we want for running LandTrendr fit 
+    spike_masks = ee.ImageCollection.fromImages(filter_pixels) 
+  
+    #run LandTrendr
+    masked_ic = spike_masks.map(lambda msk: runLTfit_mask_helper(msk,input_ic,breakpoints,min_obvs))
+    
+  
+    #combine the masked versions of LT into an image
+    combined = masked_ic.mosaic() 
+    return combined 
+
+###################################################/
+def backwardsDifference(array): 
+    right = array.arraySlice(0, 0, -1) 
+    left = array.arraySlice(0, 1) 
+    return left.subtract(right) 
+
+def forwardDifference(array): 
+    left = array.arraySlice(0, 0, -1) 
+    right = array.arraySlice(0, 1) 
+    return left.subtract(right) 
+
+def convertLTfitToLTprem(lt_fit_output,export_band,startYear,endYear): 
+    '''
+    Convert the outputs of LT fit to look like the outputs of LT premium (i.e., 4xn array). 
+    '''
+    #select one band to test the outputs of the LT fit step. This has each year as a band. 
+    ftv = lt_fit_output.select([export_band]) 
+  
+    #make a list of years then images to fill the first row of the array
+    years = ee.List.sequence(startYear,endYear,1)
+    #define a function that makes a list of constant images 
+    yrs_img = years.map(lambda x: ee.Image.constant(x)) 
+    #create an array image of years
+    yrs_img = ee.ImageCollection.fromImages(yrs_img).toBands().toArray() 
+  
+    #now create the source values- we don't have these so fill with a noData value 
+    source_vals = ee.Image.constant(-9999).toArray()
+    source_vals = source_vals.arrayRepeat(0,years.length()) 
+  
+    #next we create the isVertex row of the table. This has a one if the year is a breakpoint and 0 if not
+    #there's probably a cleaner way to do this part 
+   
+    #these are the delta outputs but they can only have a duration of one year
+    deltas = backwardsDifference(ftv) 
+  
+    #make shifted delta outputs. Taking these differences should give the location of the breakpoints? 
+    yod = forwardDifference(deltas) #year of detection
+    ones = ee.Image(ee.Array([1])) 
+    #prepend a one - when we take deltas of deltas to get the years it changed everything to shift by a year. 
+    #we also lose the first and last breakpoint years because no changes occurred in those years. We need to those to 
+    #calculate the magnitude of change for each segment so we need to add ones for those so that they are selected from the 
+    #raw data when segment magnitude changes are calculated. 
+    yod = (ones.addBands(yod).toArray(0)).toInt() #cast to int because there's a weird floating pt thing going on 
+    #add a 1 at the end- because this was based on the deltas we lost the last item in the array but we want it for the mask
+    yod = yod.addBands(ones).toArray(0) 
+    #now make a mask
+    isVertex = yod.neq(0)
+  
+    #now put all the pieces together 
+    #first concat the first two rows together 
+    arr1 = yrs_img.arrayCat(source_vals,1) 
+    #then combine the second two rows 
+    arr2 = ftv.toArray().arrayCat(isVertex,1)
+    #then combine the 2 2D arrays- it seems like arrayCat won't let you combine a 2d array with a 1d array 
+    #also rename the default array band to match the outputs of premium Landtrendr for the disturbance mapping 
+    lt_out = arr1.arrayCat(arr2,1).arrayTranspose() 
+    lt_out = lt_out.addBands(ee.Image.constant(1)).select(['array','constant'],['LandTrendr','rmse']) 
+
+    return lt_out 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # Invoking functions # # # # # # # # # # # # # # # # # # # # # # # # /
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # /

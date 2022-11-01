@@ -14,14 +14,17 @@
 # 2. ltop_output - this is the final output of LTOP, a multiband image with the LandTrendr vertex breakpoints
 # 3. table - these are the selected versions of LandTrendr that are used in the LTOP generation process 
 # 4. dest_folder - this should be created and set by the user. This will be where the stabilized composites end up. Do not add a slash, its done for you below
-
-import ee 
-import params
-import time 
+import ee  
 import pandas as pd 
 import ltop 
 import LandTrendr as ltgee
+import yaml 
 
+try: 
+	ee.Initialize()
+except Exception as e: 
+	ee.Authenticate()
+	ee.Initialize()
 
 
 #############################/
@@ -145,6 +148,17 @@ def export_imgs(output_collection,*args):
         task.start()
         return None 
 
+def get_asset_names(assets_dir,search_term): 
+        '''
+        For runs that generate multiple outputs that cover the overall ROI get all of those and splice them 
+        back together into one image/fc. 
+        '''
+        #the output is like: {'assets':[{dict with metadata on each asset}]}
+        assets = ee.data.listAssets({'parent':assets_dir})
+        #subset the assets to just their names that contain search_term
+        assets = [a['name'] for a in assets['assets'] if search_term in a['name']]
+        return assets
+
 def main(*args): 
     '''
     Invoke the process to generate stabilized composites from an input dataset. Defaults to (and expects) the SERVIR composites and their naming/band structure. 
@@ -153,10 +167,17 @@ def main(*args):
     '''
     args = args[0]
 
-    #get the necessary inputs from LTOP process
-    cluster_image = ee.Image(args["assetsRoot"] +args["assetsChild"] + "/LTOP_KMEANS_cluster_image_" + str(args["randomPts"]) + "_pts_" + str(args["maxClusters"]) + "_max_" + str(args["minClusters"]) + "_min_clusters_" + args["place"] + "_c2_" + str(args["startYear"]))
-    ltop_output = ee.Image('Optimized_LT_'+str(args['startYear'])+'_start_'+ args['place']+'_all_cluster_ids_tc')
-    table = ee.FeatureCollection(args['outfile'])
+    if args['run_times'] == 'multiple': 
+        #we need to combine multiple outputs in the instance that's how they're formatted
+        cluster_image = get_asset_names(args['assetsRoot']+args['assetsChild'],'KMEANS_cluster_image')
+        ltop_output = get_asset_names(args['assetsRoot']+args['assetsChild'],'Optimized')
+        table = get_asset_names(args['assetsRoot']+args['assetsChild'],'LT_params_tc')
+
+    elif args['run_times'] == 'single': 
+        #get the necessary inputs from LTOP process- USE for a single geometry run
+        cluster_image = ee.Image(args["assetsRoot"] +args["assetsChild"] + "/LTOP_KMEANS_cluster_image_" + str(args["randomPts"]) + "_pts_" + str(args["maxClusters"]) + "_max_" + str(args["minClusters"]) + "_min_clusters_" + args["place"] + "_c2_" + str(args["startYear"]))
+        ltop_output = ee.Image('Optimized_LT_'+str(args['startYear'])+'_start_'+ args['place']+'_all_cluster_ids_tc')
+        table = ee.FeatureCollection(args['outfile'])
 
     #build imageCollection of SERVIR composites 
     servir_ic = ltop.buildSERVIRcompsIC(args['startYear'],args['endYear']) 
@@ -174,4 +195,6 @@ def main(*args):
     output = export_imgs(export_collection,args)
 
 if __name__ == '__main__': 
-    main()
+    with open("config.yml", "r") as ymlfile:
+        cfg = yaml.safe_load(ymlfile)
+        main(cfg)
