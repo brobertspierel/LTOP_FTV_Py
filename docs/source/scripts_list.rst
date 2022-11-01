@@ -6,9 +6,10 @@ The important components are:
 
 * `run_ltop_complete.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_ltop_complete.py>`_  
 * `ltop.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/ltop.py>`_  
-* `params.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/params.py>`_  
+* `config.yml <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/config.yml>`_  
 * `lt_params.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/lt_params.py>`_  
 * `LandTrendr.py <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/LandTrendr.py>`_  
+
 and then the five module scripts from the original workflow:    
 
 * `SNIC <https://github.com/eMapR/LTOP_FTV_Py/blob/main/scripts/run_SNIC_01.py>`_  
@@ -28,6 +29,6 @@ the full repository or if you are interested in helping with development you
 can `fork <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks>`_  
 the repository to your local machine/cloud instance.  
 
-To set up a run of the LTOP workflow, you should start with the params.py file. This holds all of the 
+To set up a run of the LTOP workflow, you should start with the config.yml file. This holds all of the 
 important components that will be used to run the workflow. Setting all of this up in advance *should* 
 ensure that your run goes smoothly. 

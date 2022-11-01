@@ -11,5 +11,6 @@ where params.params is the result of import params and then referencing the dict
 do something like:    
 ``from run_ltop_complete import Run LTOPFull``
 
-This call to the RunLTOPFull class will kick of the entire LTOP workflow. The max_time argument is optional and has a default of 
-1200 seconds set in the class. This will be changed in future versions or can be overriden.
+For more complete examples of how to run this code see XXXXXXXXXXXXXXXXXXXXXX
+This call to the RunLTOPFull class will kick of the entire LTOP workflow. The sleep_time argument is optional and has a default of 
+30 seconds set in the class.

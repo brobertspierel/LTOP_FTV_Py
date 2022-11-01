@@ -20,7 +20,7 @@ more appropriate to specific geographic areas. The process relies on the Google 
    LTOP theory and background <ltop_background.rst>
    Setup LTOP runs <general_setup.rst>
    List of scripts <scripts_list.rst>
-   LTOP paramaters <params.rst>
+   LTOP paramaters <config.rst>
    Example run <examples.rst>
    Information on LTOP steps <ltop_steps.rst>
    
